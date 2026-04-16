@@ -8,52 +8,89 @@
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
     html, body {
       width: 100%; height: 100%;
-      background: #000;
+      background: #05080f;
       overflow: hidden;
     }
-    iframe {
+
+    #stars-canvas {
       position: fixed;
       inset: 0;
-      width: 100vw;
-      height: 100vh;
-      border: none;
-      z-index: 1;
+      z-index: 0;
     }
-    /* Cover any YouTube chrome at edges */
-    .edge-cover {
+
+    /*
+      Oversized iframe trick: scale up so YouTube's top bar (~60px),
+      bottom controls (~60px), and watermark are cropped off-screen.
+      pointer-events:none prevents hover from triggering controls.
+    */
+    .video-wrap {
       position: fixed;
-      background: #000;
-      z-index: 2;
+      inset: 0;
+      z-index: 1;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .video-wrap iframe {
+      width: 120vw;
+      height: 120vh;
+      border: none;
       pointer-events: none;
     }
-    .edge-cover.top    { top: 0; left: 0; right: 0; height: 1px; }
-    .edge-cover.bottom { bottom: 0; left: 0; right: 0; height: 1px; }
-    .edge-cover.left   { top: 0; bottom: 0; left: 0; width: 1px; }
-    .edge-cover.right  { top: 0; bottom: 0; right: 0; width: 1px; }
   </style>
 </head>
 <body>
+
+<canvas id="stars-canvas"></canvas>
+
+<div class="video-wrap">
   <iframe
-    src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1&mute=0&controls=0&showinfo=0&rel=0&modestbranding=1&iv_load_policy=3&loop=1&playlist=dQw4w9WgXcQ&start=0"
+    id="yt"
+    src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1&mute=0&controls=0&showinfo=0&rel=0&modestbranding=1&iv_load_policy=3&loop=1&playlist=dQw4w9WgXcQ&start=0&disablekb=1"
     allow="autoplay; encrypted-media"
     allowfullscreen
   ></iframe>
-  <div class="edge-cover top"></div>
-  <div class="edge-cover bottom"></div>
-  <div class="edge-cover left"></div>
-  <div class="edge-cover right"></div>
-  <script>
-    // Disable back navigation — trap them here
+</div>
+
+<script>
+  /* ── STARFIELD (matches 404 / index) ── */
+  const canvas = document.getElementById('stars-canvas');
+  const ctx = canvas.getContext('2d');
+  let stars = [];
+
+  function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+  function initStars(n = 260) {
+    stars = Array.from({ length: n }, () => ({
+      x: Math.random() * canvas.width, y: Math.random() * canvas.height,
+      r: Math.random() * 1.4 + 0.2,
+      a: Math.random() * 0.7 + 0.2,
+      da: (Math.random() - 0.5) * 0.003,
+    }));
+  }
+  function drawStars() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (const s of stars) {
+      s.a += s.da;
+      if (s.a > 0.9 || s.a < 0.1) s.da *= -1;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(200,220,255,${s.a})`;
+      ctx.fill();
+    }
+    requestAnimationFrame(drawStars);
+  }
+  resize(); initStars();
+  window.addEventListener('resize', () => { resize(); initStars(); });
+  drawStars();
+
+  // Trap back navigation
+  history.pushState(null, '', location.href);
+  window.addEventListener('popstate', () => {
     history.pushState(null, '', location.href);
-    window.addEventListener('popstate', () => {
-      history.pushState(null, '', location.href);
-    });
-    // Disable right-click
-    document.addEventListener('contextmenu', e => e.preventDefault());
-    // Disable keyboard shortcuts for escaping
-    document.addEventListener('keydown', e => {
-      if (e.key === 'Escape') e.preventDefault();
-    });
-  </script>
+  });
+  document.addEventListener('contextmenu', e => e.preventDefault());
+</script>
 </body>
 </html>
