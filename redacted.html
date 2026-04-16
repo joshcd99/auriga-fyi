@@ -89,12 +89,87 @@
   window.addEventListener('resize', () => { resize(); initStars(); });
   drawStars();
 
+  /* ── CHAOS MODE ── */
+  let chaosActive = true;
+
   // Trap back navigation
   history.pushState(null, '', location.href);
   window.addEventListener('popstate', () => {
     history.pushState(null, '', location.href);
   });
+
+  // Prevent right-click
   document.addEventListener('contextmenu', e => e.preventDefault());
+
+  // Request fullscreen on first interaction
+  function goFullscreen() {
+    if (!chaosActive) return;
+    const el = document.documentElement;
+    (el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen).call(el).catch(() => {});
+  }
+  document.addEventListener('click', goFullscreen, { once: true });
+
+  // Re-request fullscreen if they exit it
+  document.addEventListener('fullscreenchange', () => {
+    if (!document.fullscreenElement && chaosActive) {
+      setTimeout(goFullscreen, 300);
+    }
+  });
+
+  // Block leaving the page
+  window.addEventListener('beforeunload', e => {
+    if (!chaosActive) return;
+    e.preventDefault();
+    e.returnValue = '';
+  });
+
+  // Cycling page title
+  const titles = [
+    'NEVER GONNA GIVE YOU UP',
+    'NEVER GONNA LET YOU DOWN',
+    'NEVER GONNA RUN AROUND',
+    'AND DESERT YOU',
+  ];
+  let titleIdx = 0;
+  const titleInterval = setInterval(() => {
+    if (!chaosActive) return;
+    document.title = titles[titleIdx];
+    titleIdx = (titleIdx + 1) % titles.length;
+  }, 1500);
+
+  // Block keyboard shortcuts that could pause/escape
+  document.addEventListener('keydown', e => {
+    // Escape hatch: Cmd/Ctrl+Shift+9
+    if (e.key === '9' && e.shiftKey && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      chaosActive = false;
+      clearInterval(titleInterval);
+      document.title = 'auriga.fyi';
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      }
+      // Show escape indicator
+      const indicator = document.createElement('div');
+      indicator.textContent = '✓ escaped';
+      Object.assign(indicator.style, {
+        position: 'fixed', bottom: '16px', left: '16px', zIndex: '10',
+        fontFamily: "'Share Tech Mono', monospace", fontSize: '11px',
+        color: 'rgba(110, 231, 160, 0.5)', letterSpacing: '0.05em',
+        opacity: '0', transition: 'opacity 0.4s ease',
+      });
+      document.body.appendChild(indicator);
+      requestAnimationFrame(() => { indicator.style.opacity = '1'; });
+      return;
+    }
+
+    if (!chaosActive) return;
+
+    // Block spacebar, k (YT pause), escape, and media keys
+    const blocked = ['Space', 'KeyK', 'Escape', 'MediaPlayPause', 'MediaStop'];
+    if (blocked.includes(e.code) || e.key === ' ') {
+      e.preventDefault();
+    }
+  });
 </script>
 </body>
 </html>
