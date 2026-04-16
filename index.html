@@ -33,178 +33,105 @@
     #stars-canvas { position: fixed; inset: 0; z-index: 0; }
 
     #constellation {
-      position: fixed; inset: 0;
-      width: 100%; height: 100%;
+      position: fixed;
+      top: 28px; left: 28px;
+      width: min(420px, 38vw);
+      height: auto;
       z-index: 1;
-      pointer-events: none;
       opacity: 0;
-      animation: fadeIn 2s ease 0.4s forwards;
+      transition: opacity 0.8s ease;
     }
+    #constellation.visible { opacity: 1; }
 
-    .const-line {
-      stroke: rgba(110, 165, 255, 0.6);
-      stroke-width: 1.6;
-      stroke-linecap: round;
-      stroke-dasharray: 600;
-      stroke-dashoffset: 600;
-    }
-    .const-line.draw { animation: drawLine 1.2s ease forwards; }
-    @keyframes drawLine { to { stroke-dashoffset: 0; } }
-
-    .const-star {
-      fill: rgba(210, 230, 255, 0.95);
-      filter: drop-shadow(0 0 7px rgba(160, 210, 255, 1));
-      opacity: 0;
-    }
-    .const-star.appear { animation: starPop 0.4s ease forwards; }
-    @keyframes starPop { 0% { opacity: 0; } 60% { opacity: 1; } 100% { opacity: 1; } }
-
-    .const-label {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 11px;
-      fill: rgba(160, 200, 255, 0.55);
-      opacity: 0;
-      animation: fadeIn 0.6s ease forwards;
-    }
-
+    /* ── LAYOUT ── */
     #scene {
       position: fixed; inset: 0; z-index: 2;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      display: flex; align-items: center; justify-content: center;
       padding: 24px;
+      pointer-events: none;
     }
 
+    /* ── TERMINAL ── */
     .terminal {
-      width: 100%;
-      max-width: 540px;
+      pointer-events: all;
+      width: 100%; max-width: 520px;
       border-radius: 10px;
       border: 1px solid var(--border);
       background: var(--surface);
       backdrop-filter: blur(14px);
       box-shadow:
-        0 0 0 1px rgba(100, 160, 255, 0.06),
-        0 24px 64px rgba(0, 0, 0, 0.75),
-        0 0 80px rgba(60, 120, 220, 0.07);
+        0 0 0 1px rgba(100,160,255,0.06),
+        0 24px 64px rgba(0,0,0,0.75),
+        0 0 80px rgba(60,120,220,0.07);
       opacity: 0;
       transform: translateY(12px);
-      animation: terminalAppear 0.7s cubic-bezier(0.2, 0.8, 0.3, 1) 1.2s forwards;
+      animation: terminalAppear 0.7s cubic-bezier(0.2,0.8,0.3,1) 1.2s forwards;
     }
-    @keyframes terminalAppear { to { opacity: 1; transform: translateY(0); } }
+    @keyframes terminalAppear { to { opacity:1; transform:translateY(0); } }
 
     .terminal-bar {
-      display: flex;
-      align-items: center;
-      gap: 7px;
+      display: flex; align-items: center; gap: 7px;
       padding: 11px 14px;
       border-bottom: 1px solid var(--border);
       background: rgba(255,255,255,0.025);
       border-radius: 10px 10px 0 0;
     }
-
-    .dot { width: 11px; height: 11px; border-radius: 50%; }
-    .dot.r { background: #f4645f; }
-    .dot.y { background: #f5a623; }
-    .dot.g { background: #27c93f; }
-
-    .bar-title {
-      font-size: 12px;
-      color: var(--muted);
-      margin: 0 auto;
-      padding-right: 28px;
-      letter-spacing: 0.05em;
-    }
+    .dot { width:11px; height:11px; border-radius:50%; }
+    .dot.r { background:#f4645f; }
+    .dot.y { background:#f5a623; }
+    .dot.g { background:#27c93f; }
+    .bar-title { font-size:12px; color:var(--muted); margin:0 auto; padding-right:28px; letter-spacing:0.05em; }
 
     .terminal-body {
       padding: 22px 24px 26px;
       min-height: 200px;
-      font-size: 14px;
-      line-height: 1.75;
-      letter-spacing: 0.02em;
+      font-size: 14px; line-height: 1.75; letter-spacing: 0.02em;
     }
 
-    .line { display: block; white-space: pre; }
-    .prompt { color: var(--green); }
-    .cmd    { color: var(--text); }
-    .dim    { color: var(--muted); }
-    .oops   { color: var(--amber); }
-    .err    { color: var(--red); }
+    .line   { display:block; white-space:pre; }
+    .prompt { color:var(--green); }
+    .cmd    { color:var(--text); }
+    .dim    { color:var(--muted); }
+    .oops   { color:var(--amber); }
+    .err    { color:var(--red); }
 
-    .project-row { display: flex; align-items: baseline; opacity: 0; }
-    .project-row.visible { animation: fadeIn 0.4s ease forwards; }
-    .proj-arrow { color: var(--green-dim); margin-right: 4px; }
-    .proj-name  { min-width: 108px; color: var(--blue); }
-    .proj-desc  { color: var(--muted); font-size: 12px; }
+    .project-row { display:flex; align-items:baseline; opacity:0; }
+    .project-row.visible { animation:fadeIn 0.4s ease forwards; }
+    .proj-arrow { color:var(--green-dim); margin-right:4px; }
+    .proj-name  { min-width:110px; color:var(--blue); }
+    .proj-desc  { color:var(--muted); font-size:12px; }
 
-    .input-row { display: flex; align-items: center; }
-    .input-display { color: var(--text); }
+    .input-row     { display:flex; align-items:center; }
+    .input-display { color:var(--text); }
 
     .cursor {
-      display: inline-block;
-      width: 8px; height: 14px;
-      background: var(--green);
-      vertical-align: middle;
-      margin-left: 1px;
-      animation: blink 1.1s step-end infinite;
+      display:inline-block; width:8px; height:14px;
+      background:var(--green); vertical-align:middle; margin-left:1px;
+      animation:blink 1.1s step-end infinite;
     }
-    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
-    @keyframes fadeIn { to { opacity: 1; } }
+    @keyframes blink  { 0%,100%{opacity:1;} 50%{opacity:0;} }
+    @keyframes fadeIn { to{opacity:1;} }
 
-    #real-input {
-      position: absolute;
-      opacity: 0; pointer-events: none;
-      width: 1px; height: 1px;
-    }
+    #real-input { position:absolute; opacity:0; pointer-events:none; width:1px; height:1px; }
 
     #auriga-label {
-      position: fixed;
-      bottom: 28px; right: 32px;
-      font-family: 'Syne', sans-serif;
-      font-weight: 700; font-size: 12px;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      color: rgba(140, 190, 255, 0.25);
-      z-index: 3;
-      opacity: 0;
-      animation: fadeIn 1s ease 3.5s forwards;
+      position:fixed; bottom:28px; right:32px;
+      font-family:'Syne',sans-serif; font-weight:700;
+      font-size:11px; letter-spacing:0.18em; text-transform:uppercase;
+      color:rgba(140,190,255,0.22); z-index:3;
+      opacity:0; animation:fadeIn 1s ease 3.5s forwards;
     }
   </style>
 </head>
 <body>
 
 <canvas id="stars-canvas"></canvas>
-
-<!-- Constellation: bottom-right corner, clear of the centered terminal -->
-<svg id="constellation" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
-  <g>
-    <line class="const-line" id="l1" x1="1120" y1="510" x2="1310" y2="570" />
-    <line class="const-line" id="l2" x1="1310" y1="570" x2="1350" y2="720" />
-    <line class="const-line" id="l3" x1="1350" y1="720" x2="1200" y2="800" />
-    <line class="const-line" id="l4" x1="1200" y1="800" x2="1050" y2="710" />
-    <line class="const-line" id="l5" x1="1050" y1="710" x2="1120" y2="510" />
-    <line class="const-line" id="l6" x1="1200" y1="800" x2="1350" y2="720" />
-
-    <circle class="const-star" id="s-capella"    cx="1120" cy="510" r="5"   />
-    <circle class="const-star" id="s-menkalinan" cx="1310" cy="570" r="3.2" />
-    <circle class="const-star" id="s-theta"      cx="1350" cy="720" r="2.8" />
-    <circle class="const-star" id="s-iota"       cx="1200" cy="800" r="2.8" />
-    <circle class="const-star" id="s-epsilon"    cx="1050" cy="710" r="3"   />
-    <circle class="const-star" id="s-delta"      cx="1220" cy="620" r="2.2" />
-
-    <text class="const-label" x="1088" y="502" style="animation-delay:2.8s">Capella</text>
-    <text class="const-label" x="1318" y="565" style="animation-delay:3s">β</text>
-    <text class="const-label" x="1358" y="718" style="animation-delay:3.1s">θ</text>
-    <text class="const-label" x="1208" y="815" style="animation-delay:3.2s">ι</text>
-    <text class="const-label" x="1022" y="726" style="animation-delay:3.1s">ε</text>
-  </g>
-</svg>
+<svg id="constellation" viewBox="0 0 420 490" xmlns="http://www.w3.org/2000/svg"></svg>
 
 <div id="scene">
   <div class="terminal">
     <div class="terminal-bar">
-      <span class="dot r"></span>
-      <span class="dot y"></span>
-      <span class="dot g"></span>
+      <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
       <span class="bar-title">auriga.fyi — zsh</span>
     </div>
     <div class="terminal-body" id="terminal-body"></div>
@@ -214,188 +141,305 @@
 <input id="real-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
 <div id="auriga-label">Auriga · The Charioteer</div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <script>
-  /* ── STARFIELD ── */
-  const canvas = document.getElementById('stars-canvas');
-  const ctx = canvas.getContext('2d');
-  let stars = [];
+window.addEventListener('load', function() {
+/* ── STARFIELD ── */
+const canvas = document.getElementById('stars-canvas');
+const ctx = canvas.getContext('2d');
+let stars = [];
 
-  function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-  function initStars(n = 260) {
-    stars = Array.from({ length: n }, () => ({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height,
-      r: Math.random() * 1.4 + 0.2,
-      a: Math.random() * 0.7 + 0.2,
-      da: (Math.random() - 0.5) * 0.003,
-    }));
+function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+function initStars(n = 260) {
+  stars = Array.from({ length: n }, () => ({
+    x: Math.random() * canvas.width, y: Math.random() * canvas.height,
+    r: Math.random() * 1.4 + 0.2,
+    a: Math.random() * 0.7 + 0.2,
+    da: (Math.random() - 0.5) * 0.003,
+  }));
+}
+function drawStars() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  for (const s of stars) {
+    s.a += s.da;
+    if (s.a > 0.9 || s.a < 0.1) s.da *= -1;
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(200,220,255,${s.a})`;
+    ctx.fill();
   }
-  function drawStars() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    for (const s of stars) {
-      s.a += s.da;
-      if (s.a > 0.9 || s.a < 0.1) s.da *= -1;
-      ctx.beginPath();
-      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(200, 220, 255, ${s.a})`;
-      ctx.fill();
-    }
-    requestAnimationFrame(drawStars);
-  }
-  resize(); initStars();
-  window.addEventListener('resize', () => { resize(); initStars(); });
-  drawStars();
+  requestAnimationFrame(drawStars);
+}
+resize(); initStars();
+window.addEventListener('resize', () => { resize(); initStars(); });
+drawStars();
 
-  /* ── CONSTELLATION ── */
-  const lineDelays = { l1: 800, l2: 1100, l3: 1400, l4: 1700, l5: 2000, l6: 2250 };
-  const starDelays = {
-    's-capella': 750, 's-menkalinan': 1050, 's-theta': 1350,
-    's-iota': 1650, 's-epsilon': 1950, 's-delta': 2200
-  };
-  for (const [id, d] of Object.entries(lineDelays))
-    setTimeout(() => document.getElementById(id)?.classList.add('draw'), d);
-  for (const [id, d] of Object.entries(starDelays))
-    setTimeout(() => document.getElementById(id)?.classList.add('appear'), d);
+/* ── CONSTELLATION via D3 geoStereographic ── */
+/*
+  Star data: RA in decimal degrees (RA_hours * 15), Dec in degrees.
+    α Capella    RA 5h 16.7m → 79.17°   Dec +46.00°
+    β Menkalinan RA 5h 59.5m → 89.88°   Dec +44.95°
+    θ Mahasim    RA 5h 59.7m → 89.93°   Dec +37.21°
+    β Tau ElNath RA 5h 26.3m → 81.58°   Dec +28.61°
+    ι Hassaleh   RA 4h 56.97m → 74.24°  Dec +33.17°
+    ε Almaaz     RA 5h 02.0m → 75.50°   Dec +43.82°
 
-  /* ── TERMINAL ── */
-  const body = document.getElementById('terminal-body');
-  const realInput = document.getElementById('real-input');
+  Projection: geoStereographic centered on Auriga (RA 82.5° Dec 37°)
+  reflectX(true) corrects celestial east→left orientation.
+  Pentagon: α → β → θ → βTau → ι → α
+*/
+const W = 420, H = 360;
 
-  const PROJECTS = {
-    ember:     { label: 'Ember',     desc: 'personal finance tracker', href: 'https://auriga.fyi/ember' },
-    greenstep: { label: 'GreenStep', desc: 'sustainability challenge',  href: 'https://auriga.fyi/greenstep' },
-  };
+const starData = [
+  { id: 'capella',    name: 'α · Capella',     ra: 79.17, dec: 46.00, r: 6   },
+  { id: 'menkalinan', name: 'β · Menkalinan',  ra: 89.88, dec: 44.95, r: 3.5 },
+  { id: 'theta',      name: 'θ · Mahasim',     ra: 89.93, dec: 37.21, r: 3   },
+  { id: 'elnath',     name: 'β Tau · El Nath', ra: 81.58, dec: 28.61, r: 3.5 },
+  { id: 'iota',       name: 'ι · Hassaleh',    ra: 74.24, dec: 33.17, r: 3   },
+  { id: 'epsilon',    name: 'ε · Almaaz',      ra: 75.50, dec: 43.82, r: 2.5 },
+];
 
-  let inputDisplay = null;
-  let cursorEl = null;
-  let inputActive = false;
-  let typed = '';
+const pentagon = ['capella', 'menkalinan', 'theta', 'elnath', 'iota', 'capella'];
 
-  const sleep = ms => new Promise(r => setTimeout(r, ms));
+const centerRA = 82.5, centerDec = 37;
 
-  function appendLine(html = '') {
-    const span = document.createElement('span');
-    span.className = 'line';
-    span.innerHTML = html;
-    body.appendChild(span);
-    return span;
-  }
+const projection = d3.geoStereographic()
+  .rotate([-centerRA, -centerDec, 0])
+  .reflectX(true)
+  .scale(1500)
+  .translate([210, 255]);
 
-  async function typeText(el, text, speed = 50) {
-    for (const ch of text) {
-      el.textContent += ch;
-      await sleep(speed + Math.random() * 25);
-    }
-  }
+// Project all stars
+const byId = {};
+starData.forEach(s => {
+  const [x, y] = projection([s.ra, s.dec]);
+  s.x = x; s.y = y;
+  byId[s.id] = s;
+});
 
-  function activateInput() {
-    inputActive = true;
-    typed = '';
-    realInput.value = '';
-    realInput.focus();
+const svg = d3.select('#constellation');
 
-    const row = document.createElement('span');
-    row.className = 'line input-row';
+// Tooltip group (always on top)
+const tipG = svg.append('g').attr('pointer-events', 'none').style('opacity', 0);
+const tipBg = tipG.append('rect')
+  .attr('fill', 'rgba(5,8,15,0.82)')
+  .attr('rx', 3).attr('ry', 3);
+const tipTxt = tipG.append('text')
+  .attr('font-family', "'Share Tech Mono', monospace")
+  .attr('font-size', 11)
+  .attr('fill', 'rgba(220,235,255,0.95)');
 
-    const prompt = document.createElement('span');
-    prompt.className = 'prompt';
-    prompt.textContent = '$ ';
+function showTooltip(s) {
+  tipTxt.text(s.name);
+  const bbox = tipTxt.node().getBBox();
+  const pad = 5;
+  const bw = bbox.width + pad * 2;
+  const bh = bbox.height + pad;
+  // Position: right of star if room, else left
+  const tx = s.x + 12 + bw > W ? s.x - 14 - bw : s.x + 12;
+  const ty = s.y - bh / 2;
+  tipBg.attr('x', tx).attr('y', ty).attr('width', bw).attr('height', bh);
+  tipTxt.attr('x', tx + pad).attr('y', ty + bbox.height - 1);
+  tipG.style('opacity', 1);
+}
 
-    inputDisplay = document.createElement('span');
-    inputDisplay.className = 'input-display';
+function hideTooltip() {
+  tipG.style('opacity', 0);
+}
 
-    cursorEl = document.createElement('span');
-    cursorEl.className = 'cursor';
+// Draw lines (hidden initially via dasharray)
+const lineEls = {};
+for (let i = 0; i < pentagon.length - 1; i++) {
+  const a = byId[pentagon[i]];
+  const b = byId[pentagon[i + 1]];
+  const len = Math.hypot(b.x - a.x, b.y - a.y);
+  lineEls[`${pentagon[i]}-${pentagon[i+1]}`] = svg.insert('line', ':first-child')
+    .attr('x1', a.x).attr('y1', a.y)
+    .attr('x2', b.x).attr('y2', b.y)
+    .attr('stroke', 'rgba(110,165,255,0.65)')
+    .attr('stroke-width', 1.5)
+    .attr('stroke-linecap', 'round')
+    .attr('stroke-dasharray', len)
+    .attr('stroke-dashoffset', len);
+}
 
-    row.appendChild(prompt);
-    row.appendChild(inputDisplay);
-    row.appendChild(cursorEl);
-    body.appendChild(row);
+// Draw star circles + hover hit areas (hidden initially)
+starData.forEach(s => {
+  const g = svg.append('g').attr('cursor', 'default');
 
-    realInput.addEventListener('input', onInput);
-    realInput.addEventListener('keydown', onKey);
-  }
+  // Large transparent hit circle — pointer-events="all" required for transparent SVG fills
+  g.append('circle')
+    .attr('cx', s.x).attr('cy', s.y).attr('r', 18)
+    .attr('fill', 'transparent')
+    .attr('pointer-events', 'all');
 
-  function onInput() {
-    if (!inputActive) return;
-    typed = realInput.value;
-    inputDisplay.textContent = typed;
-  }
+  // Visible star
+  g.append('circle')
+    .attr('id', `star-${s.id}`)
+    .attr('cx', s.x).attr('cy', s.y).attr('r', s.r)
+    .attr('fill', 'rgba(220,235,255,0.95)')
+    .style('filter', 'drop-shadow(0 0 5px rgba(170,210,255,0.9))')
+    .style('opacity', 0);
 
-  function onKey(e) {
-    if (!inputActive) return;
-    if (e.key === 'Enter') { e.preventDefault(); submitCommand(); }
-    if (e.key === 'Escape') { realInput.value = ''; typed = ''; inputDisplay.textContent = ''; }
-  }
-
-  async function submitCommand() {
-    inputActive = false;
-    realInput.removeEventListener('input', onInput);
-    realInput.removeEventListener('keydown', onKey);
-    if (cursorEl?.parentNode) cursorEl.remove();
-
-    const val = typed.trim().toLowerCase();
-    const project = PROJECTS[val];
-
-    if (project) {
-      await sleep(120);
-      appendLine(`<span class="dim">navigating to ${project.label}...</span>`);
-      await sleep(700);
-      window.location.href = project.href;
-    } else if (val === '') {
-      appendLine();
-      activateInput();
-    } else {
-      await sleep(100);
-      appendLine(`<span class="err">zsh: command not found: ${typed.trim()}</span>`);
-      await sleep(300);
-      appendLine();
-      activateInput();
-    }
-  }
-
-  async function runSequence() {
-    await sleep(1600);
-
-    {
-      const line = appendLine('<span class="prompt">$ </span>');
-      const cmd = document.createElement('span');
-      cmd.className = 'cmd';
-      const cur = document.createElement('span');
-      cur.className = 'cursor';
-      line.appendChild(cmd);
-      line.appendChild(cur);
-      await typeText(cmd, 'cd ~/auriga.fyi', 55);
-      await sleep(260);
-      cur.remove();
-    }
-
-    appendLine();
-    await sleep(180);
-    appendLine('<span class="oops">oops!</span><span class="dim"> were you looking for one of these?</span>');
-    appendLine();
-    await sleep(100);
-
-    for (const [, p] of Object.entries(PROJECTS)) {
-      const row = document.createElement('span');
-      row.className = 'project-row line';
-      row.innerHTML = `<span class="proj-arrow">→ </span><span class="proj-name">${p.label}</span><span class="proj-desc">${p.desc}</span>`;
-      body.appendChild(row);
-      await sleep(60);
-      row.classList.add('visible');
-      await sleep(200);
-    }
-
-    appendLine();
-    await sleep(200);
-    activateInput();
-  }
-
-  document.querySelector('.terminal').addEventListener('click', () => {
-    if (inputActive) realInput.focus();
+  g.on('mouseenter', () => {
+    d3.select(`#star-${s.id}`)
+      .style('filter', 'drop-shadow(0 0 10px rgba(200,230,255,1))');
+    showTooltip(s);
+    tipG.raise(); // keep tooltip above everything
   });
+  g.on('mouseleave', () => {
+    d3.select(`#star-${s.id}`)
+      .style('filter', 'drop-shadow(0 0 5px rgba(170,210,255,0.9))');
+    hideTooltip();
+  });
+});
 
-  runSequence();
+// Animate constellation: fade in SVG, then draw line by line
+function animateLine(fromId, toId, delay) {
+  return new Promise(resolve => {
+    setTimeout(() => {
+      const key = `${fromId}-${toId}`;
+      lineEls[key].transition().duration(450).ease(d3.easeLinear)
+        .attr('stroke-dashoffset', 0)
+        .on('end', resolve);
+    }, delay);
+  });
+}
+
+function popStar(id, delay) {
+  if (!id || !byId[id]) return;
+  setTimeout(() => {
+    const el = d3.select(`#star-${id}`);
+    el.style('opacity', 1)
+      .attr('r', byId[id].r * 1.5)
+      .transition().duration(200).ease(d3.easeBounceOut)
+      .attr('r', byId[id].r);
+  }, delay);
+}
+
+async function runConstellation() {
+  await new Promise(r => setTimeout(r, 500));
+  document.getElementById('constellation').classList.add('visible');
+
+  popStar('capella', 200);
+
+  const seq = [
+    ['capella',    'menkalinan', 400],
+    ['menkalinan', 'theta',      900],
+    ['theta',      'elnath',     1350],
+    ['elnath',     'iota',       1800],
+    ['iota',       'capella',    2200],
+  ];
+
+  for (const [from, to, delay] of seq) {
+    animateLine(from, to, delay);
+    setTimeout(() => { if (to !== 'capella') popStar(to, 0); }, delay + 460);
+  }
+
+  setTimeout(() => popStar('epsilon', 0), 2800);
+}
+
+runConstellation();
+
+/* ── TERMINAL ── */
+const body = document.getElementById('terminal-body');
+const realInput = document.getElementById('real-input');
+
+const PROJECTS = {
+  ember:     { label: 'Ember',     desc: 'personal finance tracker', href: 'https://auriga.fyi/ember' },
+  greenstep: { label: 'GreenStep', desc: 'sustainability challenge',  href: 'https://auriga.fyi/greenstep' },
+};
+
+let inputDisplay = null, cursorEl = null, inputActive = false, typed = '';
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+function appendLine(html = '') {
+  const span = document.createElement('span');
+  span.className = 'line';
+  span.innerHTML = html;
+  body.appendChild(span);
+  return span;
+}
+
+async function typeText(el, text, speed = 50) {
+  for (const ch of text) { el.textContent += ch; await sleep(speed + Math.random() * 25); }
+}
+
+function activateInput() {
+  inputActive = true; typed = ''; realInput.value = ''; realInput.focus();
+  const row = document.createElement('span');
+  row.className = 'line input-row';
+  const prompt = document.createElement('span');
+  prompt.className = 'prompt'; prompt.textContent = '$ ';
+  inputDisplay = document.createElement('span'); inputDisplay.className = 'input-display';
+  cursorEl = document.createElement('span'); cursorEl.className = 'cursor';
+  row.appendChild(prompt); row.appendChild(inputDisplay); row.appendChild(cursorEl);
+  body.appendChild(row);
+  realInput.addEventListener('input', onInput);
+  realInput.addEventListener('keydown', onKey);
+}
+
+function onInput() {
+  if (!inputActive) return;
+  typed = realInput.value;
+  inputDisplay.textContent = typed;
+}
+
+function onKey(e) {
+  if (!inputActive) return;
+  if (e.key === 'Enter') { e.preventDefault(); submitCommand(); }
+  if (e.key === 'Escape') { realInput.value = ''; typed = ''; inputDisplay.textContent = ''; }
+}
+
+async function submitCommand() {
+  inputActive = false;
+  realInput.removeEventListener('input', onInput);
+  realInput.removeEventListener('keydown', onKey);
+  if (cursorEl?.parentNode) cursorEl.remove();
+  const val = typed.trim().toLowerCase();
+  const project = PROJECTS[val];
+  if (project) {
+    await sleep(120);
+    appendLine(`<span class="dim">navigating to ${project.label}...</span>`);
+    await sleep(700);
+    window.location.href = project.href;
+  } else if (val === '') {
+    appendLine(); activateInput();
+  } else {
+    await sleep(100);
+    appendLine(`<span class="err">zsh: command not found: ${typed.trim()}</span>`);
+    await sleep(300);
+    appendLine(); activateInput();
+  }
+}
+
+async function runTerminal() {
+  await sleep(1600);
+  {
+    const line = appendLine('<span class="prompt">$ </span>');
+    const cmd = document.createElement('span'); cmd.className = 'cmd';
+    const cur = document.createElement('span'); cur.className = 'cursor';
+    line.appendChild(cmd); line.appendChild(cur);
+    await typeText(cmd, 'cd ~/auriga.fyi', 55);
+    await sleep(260); cur.remove();
+  }
+  appendLine(); await sleep(180);
+  appendLine('<span class="oops">oops!</span><span class="dim"> were you looking for one of these?</span>');
+  appendLine(); await sleep(100);
+  for (const [, p] of Object.entries(PROJECTS)) {
+    const row = document.createElement('span');
+    row.className = 'project-row line';
+    row.innerHTML = `<span class="proj-arrow">→ </span><span class="proj-name">${p.label}</span><span class="proj-desc">${p.desc}</span>`;
+    body.appendChild(row);
+    await sleep(60); row.classList.add('visible'); await sleep(200);
+  }
+  appendLine(); await sleep(200);
+  activateInput();
+}
+
+document.querySelector('.terminal').addEventListener('click', () => { if (inputActive) realInput.focus(); });
+runTerminal();
+}); // end window load
 </script>
 </body>
 </html>
