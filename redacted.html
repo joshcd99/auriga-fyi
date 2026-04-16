@@ -19,9 +19,9 @@
     }
 
     /*
-      Oversized iframe trick: scale up so YouTube's top bar (~60px),
-      bottom controls (~60px), and watermark are cropped off-screen.
-      pointer-events:none prevents hover from triggering controls.
+      Size the iframe to fit 16:9 video exactly, then scale up ~20%
+      to crop YouTube's top bar and bottom controls off-screen.
+      The starfield shows through around the video.
     */
     .video-wrap {
       position: fixed;
@@ -34,10 +34,14 @@
     }
 
     .video-wrap iframe {
-      width: 120vw;
-      height: 120vh;
+      /* Fill viewport maintaining 16:9, then scale to crop controls */
+      width: 100vw;
+      height: 56.25vw; /* 16:9 */
+      min-width: 177.78vh; /* inverse: fill vertically if needed */
+      min-height: 100vh;
       border: none;
       pointer-events: none;
+      transform: scale(1.2);
     }
   </style>
 </head>
