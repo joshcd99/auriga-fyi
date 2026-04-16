@@ -347,8 +347,8 @@ const body = document.getElementById('terminal-body');
 const realInput = document.getElementById('real-input');
 
 const PROJECTS = {
-  ember:     { label: 'Ember',     desc: 'personal finance tracker', href: 'https://ember.auriga.fyi' },
-  greenstep: { label: 'GreenStep', desc: 'sustainability challenge',  href: 'https://greenstep.auriga.fyi' },
+  ember:     { label: 'Ember',     desc: 'personal finance tracker', href: 'https://auriga.fyi/ember' },
+  greenstep: { label: 'GreenStep', desc: 'sustainability challenge',  href: 'https://auriga.fyi/greenstep' },
 };
 
 let inputDisplay = null, cursorEl = null, inputActive = false, typed = '';
@@ -439,6 +439,7 @@ async function runTerminal() {
 }
 
 document.querySelector('.terminal').addEventListener('click', () => { if (inputActive) realInput.focus(); });
+window.addEventListener('pageshow', e => { if (e.persisted) window.location.reload(); });
 runTerminal();
 }); // end window load
 </script>
