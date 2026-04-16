@@ -107,14 +107,8 @@
     const el = document.documentElement;
     (el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen).call(el).catch(() => {});
   }
-  document.addEventListener('click', goFullscreen, { once: true });
-
-  // Re-request fullscreen if they exit it
-  document.addEventListener('fullscreenchange', () => {
-    if (!document.fullscreenElement && chaosActive) {
-      setTimeout(goFullscreen, 300);
-    }
-  });
+  // Every click re-requests fullscreen (user gesture required by browsers)
+  document.addEventListener('click', goFullscreen);
 
   // Block leaving the page
   window.addEventListener('beforeunload', e => {
