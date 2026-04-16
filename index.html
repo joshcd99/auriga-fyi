@@ -101,6 +101,8 @@
     .proj-arrow { color:var(--green-dim); margin-right:4px; }
     .proj-name  { min-width:110px; color:var(--blue); }
     .proj-desc  { color:var(--muted); font-size:12px; }
+    .proj-name.redacted { color:var(--muted); letter-spacing:0.05em; }
+    .proj-desc.redacted { font-style:italic; opacity:0.5; }
 
     .input-row     { display:flex; align-items:center; }
     .input-display { color:var(--text); }
@@ -347,8 +349,9 @@ const body = document.getElementById('terminal-body');
 const realInput = document.getElementById('real-input');
 
 const PROJECTS = {
-  ember:     { label: 'Ember',     desc: 'personal finance tracker', href: 'https://ember.auriga.fyi' },
-  greenstep: { label: 'GreenStep', desc: 'sustainability challenge',  href: 'https://greenstep.auriga.fyi' },
+  ember:     { label: 'Ember',      desc: 'personal finance tracker', href: 'https://auriga.fyi/ember' },
+  greenstep: { label: 'GreenStep',  desc: 'sustainability challenge',  href: 'https://auriga.fyi/greenstep' },
+  redacted:  { label: '[redacted]', desc: 'private',                   href: '/redacted' },
 };
 
 let inputDisplay = null, cursorEl = null, inputActive = false, typed = '';
@@ -427,10 +430,11 @@ async function runTerminal() {
   appendLine(); await sleep(180);
   appendLine('<span class="oops">oops!</span><span class="dim"> were you looking for one of these?</span>');
   appendLine(); await sleep(100);
-  for (const [, p] of Object.entries(PROJECTS)) {
+  for (const [key, p] of Object.entries(PROJECTS)) {
     const row = document.createElement('span');
     row.className = 'project-row line';
-    row.innerHTML = `<span class="proj-arrow">→ </span><span class="proj-name">${p.label}</span><span class="proj-desc">${p.desc}</span>`;
+    const isRedacted = key === 'redacted';
+    row.innerHTML = `<span class="proj-arrow">→ </span><span class="proj-name${isRedacted ? ' redacted' : ''}">${p.label}</span><span class="proj-desc${isRedacted ? ' redacted' : ''}">${p.desc}</span>`;
     body.appendChild(row);
     await sleep(60); row.classList.add('visible'); await sleep(200);
   }

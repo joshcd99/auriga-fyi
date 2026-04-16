@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>[redacted]</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%; height: 100%;
+      background: #000;
+      overflow: hidden;
+    }
+    iframe {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      border: none;
+      z-index: 1;
+    }
+    /* Cover any YouTube chrome at edges */
+    .edge-cover {
+      position: fixed;
+      background: #000;
+      z-index: 2;
+      pointer-events: none;
+    }
+    .edge-cover.top    { top: 0; left: 0; right: 0; height: 1px; }
+    .edge-cover.bottom { bottom: 0; left: 0; right: 0; height: 1px; }
+    .edge-cover.left   { top: 0; bottom: 0; left: 0; width: 1px; }
+    .edge-cover.right  { top: 0; bottom: 0; right: 0; width: 1px; }
+  </style>
+</head>
+<body>
+  <iframe
+    src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1&mute=0&controls=0&showinfo=0&rel=0&modestbranding=1&iv_load_policy=3&loop=1&playlist=dQw4w9WgXcQ&start=0"
+    allow="autoplay; encrypted-media"
+    allowfullscreen
+  ></iframe>
+  <div class="edge-cover top"></div>
+  <div class="edge-cover bottom"></div>
+  <div class="edge-cover left"></div>
+  <div class="edge-cover right"></div>
+  <script>
+    // Disable back navigation — trap them here
+    history.pushState(null, '', location.href);
+    window.addEventListener('popstate', () => {
+      history.pushState(null, '', location.href);
+    });
+    // Disable right-click
+    document.addEventListener('contextmenu', e => e.preventDefault());
+    // Disable keyboard shortcuts for escaping
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') e.preventDefault();
+    });
+  </script>
+</body>
+</html>
