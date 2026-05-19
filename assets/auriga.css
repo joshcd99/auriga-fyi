@@ -351,6 +351,12 @@ code, .mono {
   font-family: 'Share Tech Mono', monospace;
   color: var(--text);
   transition: height 0.22s cubic-bezier(0.2, 0.8, 0.3, 1);
+  animation: dockSlideIn 0.46s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+@keyframes dockSlideIn {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);     opacity: 1; }
 }
 
 .terminal-dock.collapsed {

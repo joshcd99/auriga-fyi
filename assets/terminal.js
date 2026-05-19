@@ -338,13 +338,15 @@
       document.head.appendChild(cloned);
     });
 
-    // Body classes — preserve has-dock (we still have it), merge destination class.
+    // Body classes — add destination's classes, preserve runtime classes
+    // (animation states, dock state). Never clobber the whole className,
+    // since mid-animation that would yank flying-to-dock and snap the
+    // transition back to its starting state.
     const destClasses = (doc.body.className || '').split(/\s+/).filter(Boolean);
-    const hadDock = document.body.classList.contains('has-dock');
-    const collapsed = document.body.classList.contains('dock-collapsed');
-    document.body.className = destClasses.join(' ');
-    if (hadDock) document.body.classList.add('has-dock');
-    if (collapsed) document.body.classList.add('dock-collapsed');
+    destClasses.forEach(c => document.body.classList.add(c));
+    // Make sure scroll-page is on for content pages; remove fixed-page if set.
+    document.body.classList.add('scroll-page');
+    document.body.classList.remove('fixed-page');
 
     // Re-fire resize so the starfield canvas re-extends to the new content height.
     window.dispatchEvent(new Event('resize'));
