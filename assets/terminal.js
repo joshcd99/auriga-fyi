@@ -121,11 +121,18 @@
   function mountDock(opts) {
     opts = opts || {};
     const state = loadState();
-    const startCollapsed = opts.collapsed != null ? opts.collapsed : !!state.collapsed;
+    const startCentered = !!opts.centered;
+    const isIntroRun = !!opts.intro && startCentered;
+    const startCollapsed = startCentered ? false :
+      (opts.collapsed != null ? opts.collapsed : !!state.collapsed);
 
     const dock = buildDock();
+    if (startCentered) dock.classList.add('centered');
     document.body.appendChild(dock);
-    document.body.classList.add('has-dock');
+
+    // In docked mode we add body padding so content can scroll past.
+    // In centered mode the terminal floats over content; no padding needed.
+    if (!startCentered) document.body.classList.add('has-dock');
     if (startCollapsed) dock.classList.add('collapsed');
 
     const body = dock.querySelector('[data-role="body"]');
@@ -133,10 +140,14 @@
     const realInput = dock.querySelector('[data-role="real-input"]');
     const toggleEl = dock.querySelector('[data-role="toggle"]');
 
-    // ─── Restore full history if we have it; else greet ───
-    if (state.dockHTML) {
+    // ─── Initial body content ───
+    //   intro mode: runIntro() will type the intro into an empty body.
+    //   restored history: replay the saved HTML.
+    //   else: short greeting.
+    if (isIntroRun) {
+      // leave body empty — runIntro will fill it
+    } else if (state.dockHTML) {
       body.innerHTML = state.dockHTML;
-      // Add a thin separator showing we landed somewhere new.
       const path = location.pathname.replace(/\/$/, '') || '/';
       appendLine(body, `<span class="dim">// → arrived at ${escapeHtml(path)}</span>`);
     } else {
@@ -148,6 +159,98 @@
     // Helper for saving the current dock body to sessionStorage.
     function persistDockHTML() {
       saveState({ dockHTML: body.innerHTML });
+    }
+
+    // ─── Centered → docked morph ───
+    // The single dock element changes its CSS class, which triggers
+    // transitions on top/left/width/height/transform/border. Returns a
+    // promise that resolves when the morph finishes.
+    function transitionToDocked() {
+      if (!dock.classList.contains('centered')) return Promise.resolve();
+      // Add body.has-dock first so content reserves room for the docked
+      // terminal before it lands.
+      document.body.classList.add('has-dock');
+      dock.classList.remove('centered');
+      return new Promise((resolve) => {
+        let resolved = false;
+        const finish = () => {
+          if (resolved) return;
+          resolved = true;
+          dock.removeEventListener('transitionend', onEnd);
+          resolve();
+        };
+        const onEnd = (e) => {
+          // Wait for the longest-running transition (transform) on the dock itself.
+          if (e.target === dock && (e.propertyName === 'transform' || e.propertyName === 'top')) {
+            finish();
+          }
+        };
+        dock.addEventListener('transitionend', onEnd);
+        // Safety: max transition duration is 0.72s, give it some slack.
+        setTimeout(finish, 950);
+      });
+    }
+
+    // ─── Intro typing animation ───
+    // Used only when mountDock({ centered: true, intro: true }) is called
+    // from the landing page.
+    async function typeAndRun(text) {
+      const line = document.createElement('span');
+      line.className = 'dock-line';
+      const promptEl = document.createElement('span');
+      promptEl.className = 'prompt';
+      promptEl.textContent = '$ ';
+      const cmd = document.createElement('span');
+      cmd.className = 'cmd';
+      const cur = document.createElement('span');
+      cur.className = 'cursor';
+      line.appendChild(promptEl);
+      line.appendChild(cmd);
+      line.appendChild(cur);
+      body.appendChild(line);
+      body.scrollTop = body.scrollHeight;
+      for (const ch of text) {
+        cmd.textContent += ch;
+        await sleep(50 + Math.random() * 20);
+        body.scrollTop = body.scrollHeight;
+      }
+      await sleep(220);
+      cur.remove();
+    }
+
+    function renderListing(title, table) {
+      appendLine(body, `<span class="dim">${title}</span>`);
+      for (const [key, p] of Object.entries(table)) {
+        const isRedacted = key === 'redacted';
+        const row = document.createElement('span');
+        row.className = 'dock-line listing-row';
+        row.innerHTML = `<span class="proj-arrow">→ </span><span class="proj-name${isRedacted ? ' redacted' : ''}">${p.label}</span><span class="proj-desc${isRedacted ? ' redacted' : ''}">${p.desc}</span>`;
+        body.appendChild(row);
+      }
+      appendLine(body, '');
+      body.scrollTop = body.scrollHeight;
+    }
+
+    async function runIntro() {
+      await sleep(800);
+
+      await typeAndRun('whoami');
+      appendLine(body, '<span class="accent">josh dunlap</span><span class="dim"> — cs \'26, university of st. thomas</span>');
+      appendLine(body, '');
+      await sleep(260);
+
+      await typeAndRun('ls portfolio/');
+      renderListing('portfolio (CISC 480):', PORTFOLIO);
+      await sleep(180);
+
+      await typeAndRun('ls projects/');
+      renderListing('live projects:', PROJECTS);
+
+      appendLine(body, '<span class="dim">type a command, or `help`</span>');
+      appendLine(body, '');
+      body.scrollTop = body.scrollHeight;
+      // Make input visible / focused so the cursor blinks at the prompt.
+      realInput.focus();
     }
 
     // ─── Input handling ───
@@ -241,9 +344,19 @@
           if (isInternalSpaRoute(cmd.href)) {
             appendLine(body, `<span class="dim">→ ${escapeHtml(cmd.label)}</span>`);
             persistDockHTML(); // save before swap so reloads still work
-            try {
-              await spaNavigate(cmd.href, cmd.label);
-            } catch (_) { location.href = cmd.href; }
+
+            const wasCentered = dock.classList.contains('centered');
+            // If this is the first command from the centered intro, mark
+            // intro as done and morph to docked while we fetch the page.
+            if (wasCentered) markIntroDone();
+            const navPromise = spaNavigate(cmd.href, cmd.label).catch(() => {
+              location.href = cmd.href;
+            });
+            if (wasCentered) {
+              await Promise.all([transitionToDocked(), navPromise]);
+            } else {
+              await navPromise;
+            }
           } else {
             appendLine(body, `<span class="dim">navigating to ${escapeHtml(cmd.label)}...</span>`);
             await sleep(220);
@@ -260,12 +373,20 @@
       persistDockHTML();
     }
 
+    // If caller requested intro, kick it off after the dock is mounted.
+    if (isIntroRun) {
+      runIntro().catch((err) => console.error('runIntro failed', err));
+    }
+
     return {
       dock,
       submit,
       focus: () => realInput.focus(),
       collapse: () => { dock.classList.add('collapsed'); saveState({ collapsed: true }); },
       expand: () => { dock.classList.remove('collapsed'); saveState({ collapsed: false }); },
+      transitionToDocked,
+      runIntro,
+      isCentered: () => dock.classList.contains('centered'),
     };
   }
 

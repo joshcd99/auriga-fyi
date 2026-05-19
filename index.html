@@ -9,28 +9,10 @@
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Syne:wght@400;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/assets/auriga.css" />
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --bg: #05080f;
-      --surface: rgba(8, 14, 28, 0.88);
-      --border: rgba(80, 140, 220, 0.2);
-      --green: #6ee7a0;
-      --green-dim: #3d8a5f;
-      --blue: #7ab3f0;
-      --amber: #f0c070;
-      --red: #f07878;
-      --muted: #3a4a60;
-      --text: #c8ddf0;
-    }
-
-    html, body {
-      width: 100%; height: 100%;
-      background: var(--bg);
-      font-family: 'Share Tech Mono', monospace;
-      overflow: hidden;
-      color: var(--text);
-    }
+    /* Landing-only chrome: starfield canvas + Auriga constellation SVG +
+       corner label. The terminal element itself comes from terminal.js. */
+    html, body { width: 100%; min-height: 100%; }
+    body { overflow-x: hidden; }
 
     #stars-canvas { position: fixed; inset: 0; z-index: 0; }
 
@@ -42,590 +24,180 @@
       z-index: 1;
       opacity: 0;
       transition: opacity 0.8s ease;
+      pointer-events: auto;
     }
     #constellation.visible { opacity: 1; }
 
-    /* ── LAYOUT ── */
-    #scene {
-      position: fixed; inset: 0; z-index: 2;
-      display: flex; align-items: center; justify-content: center;
-      padding: 24px;
-      pointer-events: none;
-    }
-
-    /* ── TERMINAL ── */
-    .terminal {
-      pointer-events: all;
-      width: 100%; max-width: 520px;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      background: var(--surface);
-      backdrop-filter: blur(14px);
-      box-shadow:
-        0 0 0 1px rgba(100,160,255,0.06),
-        0 24px 64px rgba(0,0,0,0.75),
-        0 0 80px rgba(60,120,220,0.07);
-      opacity: 0;
-      transform: translateY(12px);
-      animation: terminalAppear 0.7s cubic-bezier(0.2,0.8,0.3,1) 1.2s forwards;
-    }
-    @keyframes terminalAppear { to { opacity:1; transform:translateY(0); } }
-
-    .terminal-bar {
-      display: flex; align-items: center; gap: 7px;
-      padding: 11px 14px;
-      border-bottom: 1px solid var(--border);
-      background: rgba(255,255,255,0.025);
-      border-radius: 10px 10px 0 0;
-    }
-    .dot { width:11px; height:11px; border-radius:50%; }
-    .dot.r { background:#f4645f; }
-    .dot.y { background:#f5a623; }
-    .dot.g { background:#27c93f; }
-    .bar-title { font-size:12px; color:var(--muted); margin:0 auto; padding-right:28px; letter-spacing:0.05em; }
-
-    .terminal-body {
-      padding: 22px 24px 26px;
-      min-height: 200px;
-      font-size: 14px; line-height: 1.75; letter-spacing: 0.02em;
-    }
-
-    .line   { display:block; white-space:pre; }
-    .prompt { color:var(--green); }
-    .cmd    { color:var(--text); }
-    .dim    { color:var(--muted); }
-    .oops   { color:var(--amber); }
-    .err    { color:var(--red); }
-
-    .project-row { display:flex; align-items:baseline; opacity:0; }
-    .project-row.visible { animation:fadeIn 0.4s ease forwards; }
-    .proj-arrow { color:var(--green-dim); margin-right:4px; }
-    .proj-name  { min-width:110px; color:var(--blue); }
-    .proj-desc  { color:var(--muted); font-size:12px; }
-    .proj-name.redacted { color:var(--muted); letter-spacing:0.05em; }
-    .proj-desc.redacted { font-style:italic; opacity:0.5; }
-
-    .input-row     { display:flex; align-items:center; }
-    .input-display { color:var(--text); }
-
-    .cursor {
-      display:inline-block; width:8px; height:14px;
-      background:var(--green); vertical-align:middle; margin-left:1px;
-      animation:blink 1.1s step-end infinite;
-    }
-    @keyframes blink  { 0%,100%{opacity:1;} 50%{opacity:0;} }
-    @keyframes fadeIn { to{opacity:1;} }
-
-    #real-input { position:absolute; opacity:0; pointer-events:none; width:1px; height:1px; }
-
     #auriga-label {
-      position:fixed; bottom:28px; right:32px;
-      font-family:'Syne',sans-serif; font-weight:700;
-      font-size:11px; letter-spacing:0.18em; text-transform:uppercase;
-      color:rgba(140,190,255,0.22); z-index:3;
-      opacity:0; animation:fadeIn 1s ease 3.5s forwards;
+      position: fixed;
+      bottom: 18px; right: 22px;
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(140, 190, 255, 0.22);
+      z-index: 3;
+      pointer-events: none;
+      opacity: 0;
+      animation: aurigaLabelFade 1s ease 3.5s forwards;
     }
+    @keyframes aurigaLabelFade { to { opacity: 1; } }
   </style>
 </head>
 <body>
 
 <canvas id="stars-canvas"></canvas>
 <svg id="constellation" viewBox="0 0 420 490" xmlns="http://www.w3.org/2000/svg"></svg>
-
-<div id="scene">
-  <div class="terminal">
-    <div class="terminal-bar">
-      <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
-      <span class="bar-title">auriga.fyi — zsh</span>
-    </div>
-    <div class="terminal-body" id="terminal-body"></div>
-  </div>
-</div>
-
-<input id="real-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
 <div id="auriga-label">Auriga · The Charioteer</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script src="/assets/auriga.js"></script>
 <script src="/assets/terminal.js"></script>
 <script>
-window.addEventListener('load', function() {
+window.addEventListener('load', function () {
 
-/* ── Returning-visitor mode: skip the centered intro, mount the dock ── */
-const SKIP_INTRO = !!(window.AurigaTerminal && window.AurigaTerminal.wasIntroDone());
-if (SKIP_INTRO) {
-  const scene = document.getElementById('scene');
-  if (scene) scene.style.display = 'none';
-  window.AurigaTerminal.mountDock({ autoFocus: true });
-
-  // Only seed a fresh listing if the dock has no prior history to restore.
-  if (!window.AurigaTerminal.hasDockHistory()) {
-    setTimeout(() => {
-      const body = document.querySelector('.terminal-dock .dock-body');
-      if (!body) return;
-      const printListing = (title, table) => {
-        const t = document.createElement('span');
-        t.className = 'dock-line';
-        t.innerHTML = '<span class="dim">' + title + '</span>';
-        body.appendChild(t);
-        for (const [key, p] of Object.entries(table)) {
-          const isRedacted = key === 'redacted';
-          const row = document.createElement('span');
-          row.className = 'dock-line listing-row';
-          row.innerHTML = '<span class="proj-arrow">→ </span><span class="proj-name' + (isRedacted ? ' redacted' : '') + '">' + p.label + '</span><span class="proj-desc' + (isRedacted ? ' redacted' : '') + '">' + p.desc + '</span>';
-          body.appendChild(row);
-        }
-        body.appendChild(document.createElement('br'));
-      };
-      printListing('portfolio (CISC 480):', window.AurigaTerminal.PORTFOLIO);
-      printListing('live projects:', window.AurigaTerminal.PROJECTS);
-      body.scrollTop = body.scrollHeight;
-    }, 50);
-  }
-}
-/* ── STARFIELD ── */
-const canvas = document.getElementById('stars-canvas');
-const ctx = canvas.getContext('2d');
-let stars = [];
-
-function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-function initStars(n = 260) {
-  stars = Array.from({ length: n }, () => ({
-    x: Math.random() * canvas.width, y: Math.random() * canvas.height,
-    r: Math.random() * 1.4 + 0.2,
-    a: Math.random() * 0.7 + 0.2,
-    da: (Math.random() - 0.5) * 0.003,
-  }));
-}
-function drawStars() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  for (const s of stars) {
-    s.a += s.da;
-    if (s.a > 0.9 || s.a < 0.1) s.da *= -1;
-    ctx.beginPath();
-    ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(200,220,255,${s.a})`;
-    ctx.fill();
-  }
-  requestAnimationFrame(drawStars);
-}
-resize(); initStars();
-window.addEventListener('resize', () => { resize(); initStars(); });
-drawStars();
-
-/* ── CONSTELLATION via D3 geoStereographic ── */
-/*
-  Star data: RA in decimal degrees (RA_hours * 15), Dec in degrees.
-    α Capella    RA 5h 16.7m → 79.17°   Dec +46.00°
-    β Menkalinan RA 5h 59.5m → 89.88°   Dec +44.95°
-    θ Mahasim    RA 5h 59.7m → 89.93°   Dec +37.21°
-    β Tau ElNath RA 5h 26.3m → 81.58°   Dec +28.61°
-    ι Hassaleh   RA 4h 56.97m → 74.24°  Dec +33.17°
-    ε Almaaz     RA 5h 02.0m → 75.50°   Dec +43.82°
-
-  Projection: geoStereographic centered on Auriga (RA 82.5° Dec 37°)
-  reflectX(true) corrects celestial east→left orientation.
-  Pentagon: α → β → θ → βTau → ι → α
-*/
-const W = 420, H = 360;
-
-const starData = [
-  { id: 'capella',    name: 'α · Capella',     ra: 79.17, dec: 46.00, r: 6   },
-  { id: 'menkalinan', name: 'β · Menkalinan',  ra: 89.88, dec: 44.95, r: 3.5 },
-  { id: 'theta',      name: 'θ · Mahasim',     ra: 89.93, dec: 37.21, r: 3   },
-  { id: 'elnath',     name: 'β Tau · El Nath', ra: 81.58, dec: 28.61, r: 3.5 },
-  { id: 'iota',       name: 'ι · Hassaleh',    ra: 74.24, dec: 33.17, r: 3   },
-  { id: 'epsilon',    name: 'ε · Almaaz',      ra: 75.50, dec: 43.82, r: 2.5 },
-];
-
-const pentagon = ['capella', 'menkalinan', 'theta', 'elnath', 'iota', 'capella'];
-
-const centerRA = 82.5, centerDec = 37;
-
-const projection = d3.geoStereographic()
-  .rotate([-centerRA, -centerDec, 0])
-  .reflectX(true)
-  .scale(1500)
-  .translate([210, 255]);
-
-// Project all stars
-const byId = {};
-starData.forEach(s => {
-  const [x, y] = projection([s.ra, s.dec]);
-  s.x = x; s.y = y;
-  byId[s.id] = s;
-});
-
-const svg = d3.select('#constellation');
-
-// Tooltip group (always on top)
-const tipG = svg.append('g').attr('pointer-events', 'none').style('opacity', 0);
-const tipBg = tipG.append('rect')
-  .attr('fill', 'rgba(5,8,15,0.82)')
-  .attr('rx', 3).attr('ry', 3);
-const tipTxt = tipG.append('text')
-  .attr('font-family', "'Share Tech Mono', monospace")
-  .attr('font-size', 11)
-  .attr('fill', 'rgba(220,235,255,0.95)');
-
-function showTooltip(s) {
-  tipTxt.text(s.name);
-  const bbox = tipTxt.node().getBBox();
-  const pad = 5;
-  const bw = bbox.width + pad * 2;
-  const bh = bbox.height + pad;
-  // Position: right of star if room, else left
-  const tx = s.x + 12 + bw > W ? s.x - 14 - bw : s.x + 12;
-  const ty = s.y - bh / 2;
-  tipBg.attr('x', tx).attr('y', ty).attr('width', bw).attr('height', bh);
-  tipTxt.attr('x', tx + pad).attr('y', ty + bbox.height - 1);
-  tipG.style('opacity', 1);
-}
-
-function hideTooltip() {
-  tipG.style('opacity', 0);
-}
-
-// Draw lines (hidden initially via dasharray)
-const lineEls = {};
-for (let i = 0; i < pentagon.length - 1; i++) {
-  const a = byId[pentagon[i]];
-  const b = byId[pentagon[i + 1]];
-  const len = Math.hypot(b.x - a.x, b.y - a.y);
-  lineEls[`${pentagon[i]}-${pentagon[i+1]}`] = svg.insert('line', ':first-child')
-    .attr('x1', a.x).attr('y1', a.y)
-    .attr('x2', b.x).attr('y2', b.y)
-    .attr('stroke', 'rgba(110,165,255,0.65)')
-    .attr('stroke-width', 1.5)
-    .attr('stroke-linecap', 'round')
-    .attr('stroke-dasharray', len)
-    .attr('stroke-dashoffset', len);
-}
-
-// Draw star circles + hover hit areas (hidden initially)
-starData.forEach(s => {
-  const g = svg.append('g').attr('cursor', 'default');
-
-  // Large transparent hit circle — pointer-events="all" required for transparent SVG fills
-  g.append('circle')
-    .attr('cx', s.x).attr('cy', s.y).attr('r', 18)
-    .attr('fill', 'transparent')
-    .attr('pointer-events', 'all');
-
-  // Visible star
-  g.append('circle')
-    .attr('id', `star-${s.id}`)
-    .attr('cx', s.x).attr('cy', s.y).attr('r', s.r)
-    .attr('fill', 'rgba(220,235,255,0.95)')
-    .style('filter', 'drop-shadow(0 0 5px rgba(170,210,255,0.9))')
-    .style('opacity', 0);
-
-  g.on('mouseenter', () => {
-    d3.select(`#star-${s.id}`)
-      .style('filter', 'drop-shadow(0 0 10px rgba(200,230,255,1))');
-    showTooltip(s);
-    tipG.raise(); // keep tooltip above everything
-  });
-  g.on('mouseleave', () => {
-    d3.select(`#star-${s.id}`)
-      .style('filter', 'drop-shadow(0 0 5px rgba(170,210,255,0.9))');
-    hideTooltip();
-  });
-});
-
-// Animate constellation: fade in SVG, then draw line by line
-function animateLine(fromId, toId, delay) {
-  return new Promise(resolve => {
-    setTimeout(() => {
-      const key = `${fromId}-${toId}`;
-      lineEls[key].transition().duration(450).ease(d3.easeLinear)
-        .attr('stroke-dashoffset', 0)
-        .on('end', resolve);
-    }, delay);
-  });
-}
-
-function popStar(id, delay) {
-  if (!id || !byId[id]) return;
-  setTimeout(() => {
-    const el = d3.select(`#star-${id}`);
-    el.style('opacity', 1)
-      .attr('r', byId[id].r * 1.5)
-      .transition().duration(200).ease(d3.easeBounceOut)
-      .attr('r', byId[id].r);
-  }, delay);
-}
-
-async function runConstellation() {
-  await new Promise(r => setTimeout(r, 500));
-  document.getElementById('constellation').classList.add('visible');
-
-  popStar('capella', 200);
-
-  const seq = [
-    ['capella',    'menkalinan', 400],
-    ['menkalinan', 'theta',      900],
-    ['theta',      'elnath',     1350],
-    ['elnath',     'iota',       1800],
-    ['iota',       'capella',    2200],
+  /* ── CONSTELLATION via D3 geoStereographic ──
+     α Capella, β Menkalinan, θ Mahasim, β Tau ElNath, ι Hassaleh, ε Almaaz
+     centered on Auriga (RA 82.5° Dec 37°), reflected for celestial east→left. */
+  const W = 420;
+  const starData = [
+    { id: 'capella',    name: 'α · Capella',     ra: 79.17, dec: 46.00, r: 6   },
+    { id: 'menkalinan', name: 'β · Menkalinan',  ra: 89.88, dec: 44.95, r: 3.5 },
+    { id: 'theta',      name: 'θ · Mahasim',     ra: 89.93, dec: 37.21, r: 3   },
+    { id: 'elnath',     name: 'β Tau · El Nath', ra: 81.58, dec: 28.61, r: 3.5 },
+    { id: 'iota',       name: 'ι · Hassaleh',    ra: 74.24, dec: 33.17, r: 3   },
+    { id: 'epsilon',    name: 'ε · Almaaz',      ra: 75.50, dec: 43.82, r: 2.5 },
   ];
+  const pentagon = ['capella', 'menkalinan', 'theta', 'elnath', 'iota', 'capella'];
 
-  for (const [from, to, delay] of seq) {
-    animateLine(from, to, delay);
-    setTimeout(() => { if (to !== 'capella') popStar(to, 0); }, delay + 460);
+  const projection = d3.geoStereographic()
+    .rotate([-82.5, -37, 0])
+    .reflectX(true)
+    .scale(1500)
+    .translate([210, 255]);
+
+  const byId = {};
+  starData.forEach(s => {
+    const [x, y] = projection([s.ra, s.dec]);
+    s.x = x; s.y = y;
+    byId[s.id] = s;
+  });
+
+  const svg = d3.select('#constellation');
+  const tipG = svg.append('g').attr('pointer-events', 'none').style('opacity', 0);
+  const tipBg = tipG.append('rect').attr('fill', 'rgba(5,8,15,0.82)').attr('rx', 3).attr('ry', 3);
+  const tipTxt = tipG.append('text')
+    .attr('font-family', "'Share Tech Mono', monospace")
+    .attr('font-size', 11)
+    .attr('fill', 'rgba(220,235,255,0.95)');
+
+  function showTooltip(s) {
+    tipTxt.text(s.name);
+    const bbox = tipTxt.node().getBBox();
+    const pad = 5;
+    const bw = bbox.width + pad * 2;
+    const bh = bbox.height + pad;
+    const tx = s.x + 12 + bw > W ? s.x - 14 - bw : s.x + 12;
+    const ty = s.y - bh / 2;
+    tipBg.attr('x', tx).attr('y', ty).attr('width', bw).attr('height', bh);
+    tipTxt.attr('x', tx + pad).attr('y', ty + bbox.height - 1);
+    tipG.style('opacity', 1);
+  }
+  function hideTooltip() { tipG.style('opacity', 0); }
+
+  // Pentagon edges (drawn line by line as the animation runs).
+  const lineEls = {};
+  for (let i = 0; i < pentagon.length - 1; i++) {
+    const a = byId[pentagon[i]];
+    const b = byId[pentagon[i + 1]];
+    const len = Math.hypot(b.x - a.x, b.y - a.y);
+    lineEls[`${pentagon[i]}-${pentagon[i+1]}`] = svg.insert('line', ':first-child')
+      .attr('x1', a.x).attr('y1', a.y)
+      .attr('x2', b.x).attr('y2', b.y)
+      .attr('stroke', 'rgba(110,165,255,0.65)')
+      .attr('stroke-width', 1.5)
+      .attr('stroke-linecap', 'round')
+      .attr('stroke-dasharray', len)
+      .attr('stroke-dashoffset', len);
   }
 
-  setTimeout(() => popStar('epsilon', 0), 2800);
-}
+  // Stars + hover hit areas.
+  starData.forEach(s => {
+    const g = svg.append('g').attr('cursor', 'default');
+    g.append('circle')
+      .attr('cx', s.x).attr('cy', s.y).attr('r', 18)
+      .attr('fill', 'transparent').attr('pointer-events', 'all');
+    g.append('circle')
+      .attr('id', `star-${s.id}`)
+      .attr('cx', s.x).attr('cy', s.y).attr('r', s.r)
+      .attr('fill', 'rgba(220,235,255,0.95)')
+      .style('filter', 'drop-shadow(0 0 5px rgba(170,210,255,0.9))')
+      .style('opacity', 0);
+    g.on('mouseenter', () => {
+      d3.select(`#star-${s.id}`).style('filter', 'drop-shadow(0 0 10px rgba(200,230,255,1))');
+      showTooltip(s);
+      tipG.raise();
+    });
+    g.on('mouseleave', () => {
+      d3.select(`#star-${s.id}`).style('filter', 'drop-shadow(0 0 5px rgba(170,210,255,0.9))');
+      hideTooltip();
+    });
+  });
 
-runConstellation();
-
-/* ── TERMINAL ── */
-const body = document.getElementById('terminal-body');
-const realInput = document.getElementById('real-input');
-
-// Portfolio commands (CISC 480) — navigate within auriga.fyi.
-const PORTFOLIO = {
-  about:      { label: 'about',      desc: 'who I am',                       href: '/about/' },
-  skills:     { label: 'skills',     desc: 'what I work with',               href: '/skills/' },
-  projects:   { label: 'projects',   desc: 'what I\'ve built (5 entries)',   href: '/projects/' },
-  resume:     { label: 'resume',     desc: '1-page CV',                      href: '/resume/' },
-  reflection: { label: 'reflection', desc: 'signature work essay',           href: 'https://github.com/joshcd99/auriga-fyi#readme' },
-};
-
-// Live mini-products (sub-domains).
-const PROJECTS = {
-  ember:     { label: 'Ember',      desc: 'personal finance tracker',  href: 'https://ember.auriga.fyi' },
-  greenstep: { label: 'GreenStep',  desc: 'sustainability challenge',  href: 'https://greenstep.auriga.fyi' },
-  plants:    { label: 'Plants',     desc: 'plant care tracker',        href: 'https://plants.auriga.fyi' },
-  redacted:  { label: '[redacted]', desc: 'private',                   href: '/redacted' },
-};
-
-// Combined route map.
-const ROUTES = Object.assign({}, PORTFOLIO, PROJECTS);
-
-let inputDisplay = null, cursorEl = null, inputActive = false, typed = '';
-const sleep = ms => new Promise(r => setTimeout(r, ms));
-
-function appendLine(html = '') {
-  const span = document.createElement('span');
-  span.className = 'line';
-  span.innerHTML = html;
-  body.appendChild(span);
-  return span;
-}
-
-async function typeText(el, text, speed = 50) {
-  for (const ch of text) { el.textContent += ch; await sleep(speed + Math.random() * 25); }
-}
-
-function activateInput() {
-  inputActive = true; typed = ''; realInput.value = ''; realInput.focus();
-  const row = document.createElement('span');
-  row.className = 'line input-row';
-  const prompt = document.createElement('span');
-  prompt.className = 'prompt'; prompt.textContent = '$ ';
-  inputDisplay = document.createElement('span'); inputDisplay.className = 'input-display';
-  cursorEl = document.createElement('span'); cursorEl.className = 'cursor';
-  row.appendChild(prompt); row.appendChild(inputDisplay); row.appendChild(cursorEl);
-  body.appendChild(row);
-  realInput.addEventListener('input', onInput);
-  realInput.addEventListener('keydown', onKey);
-}
-
-function onInput() {
-  if (!inputActive) return;
-  typed = realInput.value;
-  inputDisplay.textContent = typed;
-}
-
-function onKey(e) {
-  if (!inputActive) return;
-  if (e.key === 'Enter') { e.preventDefault(); submitCommand(); }
-  if (e.key === 'Escape') { realInput.value = ''; typed = ''; inputDisplay.textContent = ''; }
-}
-
-function renderListing(title, table) {
-  appendLine(`<span class="dim">${title}</span>`);
-  for (const [key, p] of Object.entries(table)) {
-    const isRedacted = key === 'redacted';
-    const row = document.createElement('span');
-    row.className = 'project-row line visible';
-    row.innerHTML = `<span class="proj-arrow">→ </span><span class="proj-name${isRedacted ? ' redacted' : ''}">${p.label}</span><span class="proj-desc${isRedacted ? ' redacted' : ''}">${p.desc}</span>`;
-    body.appendChild(row);
-  }
-  appendLine();
-}
-
-async function submitCommand() {
-  inputActive = false;
-  realInput.removeEventListener('input', onInput);
-  realInput.removeEventListener('keydown', onKey);
-  if (cursorEl?.parentNode) cursorEl.remove();
-  const val = typed.trim().toLowerCase();
-
-  // Built-in shell commands.
-  if (val === 'help' || val === '?' || val === 'ls') {
-    await sleep(100);
-    renderListing('portfolio (CISC 480):', PORTFOLIO);
-    renderListing('live projects:', PROJECTS);
-    appendLine('<span class="dim">type a command, or `clear`</span>');
-    appendLine();
-    activateInput();
-    return;
-  }
-  if (val === 'clear') {
-    body.innerHTML = '';
-    activateInput();
-    return;
-  }
-  if (val === 'whoami') {
-    appendLine('<span class="accent">josh dunlap</span><span class="dim"> — cs \'26, university of st. thomas</span>');
-    appendLine();
-    activateInput();
-    return;
-  }
-
-  const route = ROUTES[val];
-  if (route) {
-    await sleep(120);
-    appendLine(`<span class="dim">→ ${route.label}</span>`);
-
-    // SPA-navigate for internal portfolio routes — terminal stays mounted,
-    // only the content area swaps. Real navigation for external links.
-    const useSpa = window.AurigaTerminal && window.AurigaTerminal.isInternalSpaRoute(route.href);
-
-    if (useSpa) {
-      window.AurigaTerminal.markIntroDone();
-      // Seed the dock body with the centered intro's content so the dock,
-      // when it mounts, comes up already showing the full history.
-      try {
-        const centeredHTML = document.getElementById('terminal-body').innerHTML;
-        const dockHTML = centeredHTML
-          .replace(/class="line"/g, 'class="dock-line"')
-          .replace(/class="line input-row"/g, 'class="dock-line input-row hidden-input"')
-          .replace(/class="project-row line/g, 'class="dock-line listing-row');
-        window.AurigaTerminal.seedDockHTML(dockHTML);
-      } catch (_) {}
-
-      // Drive the fly-down via inline JS styles. This wins over the existing
-      // `terminalAppear` keyframe animation (CSS animations beat regular
-      // declared styles in the cascade) and is immune to body-class wipes
-      // that might happen during the SPA fetch.
-      const term = document.querySelector('#scene .terminal');
-      if (term) {
-        // Cancel the forwards-fill intro animation and lock in its end state.
-        term.style.animation = 'none';
-        term.style.opacity = '1';
-        term.style.transform = 'translateY(0)';
-        // Force a reflow so the browser observes the locked-in state.
-        void term.offsetHeight;
-        // Set up the transition, then on the next frame apply the target.
-        term.style.transition = 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s ease 0.1s';
-        requestAnimationFrame(() => {
-          term.style.transform = 'translateY(48vh) scale(0.42)';
-          term.style.opacity = '0';
-        });
-      }
-
-      // Kick off fetch + swap in parallel with the animation.
-      const navPromise = window.AurigaTerminal.spaNavigate(route.href, route.label);
-
-      // Mount the dock partway through the fall, so it slides up from below
-      // while the centered terminal is still descending — reads as one motion.
+  function animateLine(fromId, toId, delay) {
+    return new Promise(resolve => {
       setTimeout(() => {
-        window.AurigaTerminal.mountDock({ autoFocus: true });
-      }, 220);
+        lineEls[`${fromId}-${toId}`].transition().duration(450).ease(d3.easeLinear)
+          .attr('stroke-dashoffset', 0).on('end', resolve);
+      }, delay);
+    });
+  }
+  function popStar(id, delay) {
+    if (!id || !byId[id]) return;
+    setTimeout(() => {
+      d3.select(`#star-${id}`).style('opacity', 1)
+        .attr('r', byId[id].r * 1.5)
+        .transition().duration(200).ease(d3.easeBounceOut)
+        .attr('r', byId[id].r);
+    }, delay);
+  }
 
-      // Wait for both the animation and the fetch.
-      await Promise.all([sleep(620), navPromise]);
-
-      // Hide the centered scene last, after dock + content are in place.
-      const scene = document.getElementById('scene');
-      if (scene) scene.style.display = 'none';
-      return;
+  (async function runConstellation() {
+    await new Promise(r => setTimeout(r, 500));
+    document.getElementById('constellation').classList.add('visible');
+    popStar('capella', 200);
+    const seq = [
+      ['capella',    'menkalinan', 400],
+      ['menkalinan', 'theta',      900],
+      ['theta',      'elnath',     1350],
+      ['elnath',     'iota',       1800],
+      ['iota',       'capella',    2200],
+    ];
+    for (const [from, to, delay] of seq) {
+      animateLine(from, to, delay);
+      setTimeout(() => { if (to !== 'capella') popStar(to, 0); }, delay + 460);
     }
+    setTimeout(() => popStar('epsilon', 0), 2800);
+  })();
 
-    // External / non-SPA: fade the centered terminal and do a real navigation.
-    document.body.classList.add('flying-to-dock');
-    await sleep(320);
-    window.location.href = route.href;
-    return;
-  }
-  if (val === '') {
-    appendLine(); activateInput(); return;
-  }
-  await sleep(100);
-  appendLine(`<span class="err">zsh: command not found: ${typed.trim()}</span><span class="dim">  (try \`help\`)</span>`);
-  await sleep(200);
-  appendLine();
-  activateInput();
-}
+  /* ── TERMINAL ──
+     One DOM element across the entire visit. On first visit, mount it in
+     centered mode and run the intro animation inside it; on first command,
+     it morphs to the bottom-docked state via CSS transitions (handled by
+     terminal.js). On subsequent visits (intro already shown), mount it
+     directly in docked mode. */
+  const introDone = window.AurigaTerminal && window.AurigaTerminal.wasIntroDone();
+  window.AurigaTerminal.mountDock({
+    centered: !introDone,
+    intro:    !introDone,
+    autoFocus: true,
+  });
 
-async function animateListing(title, table) {
-  appendLine(`<span class="dim">${title}</span>`);
-  await sleep(120);
-  for (const [key, p] of Object.entries(table)) {
-    const row = document.createElement('span');
-    row.className = 'project-row line';
-    const isRedacted = key === 'redacted';
-    row.innerHTML = `<span class="proj-arrow">→ </span><span class="proj-name${isRedacted ? ' redacted' : ''}">${p.label}</span><span class="proj-desc${isRedacted ? ' redacted' : ''}">${p.desc}</span>`;
-    body.appendChild(row);
-    await sleep(50); row.classList.add('visible'); await sleep(140);
-  }
-  appendLine();
-}
-
-async function runTerminal() {
-  await sleep(1600);
-
-  // $ whoami
-  {
-    const line = appendLine('<span class="prompt">$ </span>');
-    const cmd = document.createElement('span'); cmd.className = 'cmd';
-    const cur = document.createElement('span'); cur.className = 'cursor';
-    line.appendChild(cmd); line.appendChild(cur);
-    await typeText(cmd, 'whoami', 55);
-    await sleep(200); cur.remove();
-  }
-  appendLine('<span class="accent">josh dunlap</span><span class="dim"> — cs \'26, university of st. thomas</span>');
-  appendLine();
-  await sleep(280);
-
-  // $ ls portfolio/
-  {
-    const line = appendLine('<span class="prompt">$ </span>');
-    const cmd = document.createElement('span'); cmd.className = 'cmd';
-    const cur = document.createElement('span'); cur.className = 'cursor';
-    line.appendChild(cmd); line.appendChild(cur);
-    await typeText(cmd, 'ls portfolio/', 50);
-    await sleep(180); cur.remove();
-  }
-  await animateListing('portfolio (CISC 480):', PORTFOLIO);
-  await sleep(180);
-
-  // $ ls projects/
-  {
-    const line = appendLine('<span class="prompt">$ </span>');
-    const cmd = document.createElement('span'); cmd.className = 'cmd';
-    const cur = document.createElement('span'); cur.className = 'cursor';
-    line.appendChild(cmd); line.appendChild(cur);
-    await typeText(cmd, 'ls projects/', 50);
-    await sleep(180); cur.remove();
-  }
-  await animateListing('live projects:', PROJECTS);
-
-  appendLine('<span class="dim">type a command, or `help`</span>');
-  appendLine();
-  await sleep(160);
-  activateInput();
-}
-
-if (!SKIP_INTRO) {
-  document.querySelector('#scene .terminal').addEventListener('click', () => { if (inputActive) realInput.focus(); });
+  // Hard reloads on bf-cache restore — keep the current behaviour.
   window.addEventListener('pageshow', e => { if (e.persisted) window.location.reload(); });
-  runTerminal();
-}
-}); // end window load
+});
 </script>
+
 </body>
 </html>

@@ -14,6 +14,7 @@
   --muted: #3a4a60;
   --text: #c8ddf0;
   --text-dim: #8fa5be;
+  --dock-height: 280px;
 }
 
 html, body {
@@ -333,16 +334,22 @@ code, .mono {
   .project-list li { flex-wrap: wrap; }
 }
 
-/* ─── Docked terminal (persistent across pages) ─── */
+/* ─── The terminal (single element, two states: centered / docked) ─── */
+/* Default = docked state. .centered overrides for the landing-page intro. */
 .terminal-dock {
   position: fixed;
-  left: 0; right: 0; bottom: 0;
-  height: 280px;
+  top: calc(100vh - var(--dock-height));
+  left: 0;
+  width: 100vw;
+  height: var(--dock-height);
+  transform: translate(0, 0);
   z-index: 50;
   display: flex;
   flex-direction: column;
   background: rgba(8, 14, 28, 0.92);
-  border-top: 1px solid rgba(80, 140, 220, 0.28);
+  border: 0 solid rgba(80, 140, 220, 0.28);
+  border-top-width: 1px;
+  border-radius: 0;
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   box-shadow:
@@ -350,22 +357,41 @@ code, .mono {
     0 -1px 0 rgba(100, 160, 255, 0.06) inset;
   font-family: 'Share Tech Mono', monospace;
   color: var(--text);
-  transition: height 0.22s cubic-bezier(0.2, 0.8, 0.3, 1);
-  animation: dockSlideIn 0.46s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+  transition:
+    top 0.72s cubic-bezier(0.45, 0, 0.2, 1),
+    left 0.72s cubic-bezier(0.45, 0, 0.2, 1),
+    width 0.72s cubic-bezier(0.45, 0, 0.2, 1),
+    height 0.72s cubic-bezier(0.45, 0, 0.2, 1),
+    transform 0.72s cubic-bezier(0.45, 0, 0.2, 1),
+    border-radius 0.4s ease,
+    border-color 0.4s ease,
+    border-width 0.4s ease;
 }
 
-@keyframes dockSlideIn {
-  from { transform: translateY(100%); opacity: 0; }
-  to   { transform: translateY(0);     opacity: 1; }
+/* Centered state — used during the landing-page intro. The single element
+   morphs from this to the default (docked) state when the user submits
+   their first command. */
+.terminal-dock.centered {
+  top: 50vh;
+  left: 50vw;
+  width: min(520px, calc(100vw - 48px));
+  height: min(440px, calc(100vh - 96px));
+  transform: translate(-50%, -50%);
+  border-width: 1px;
+  border-radius: 10px;
+  box-shadow:
+    0 0 0 1px rgba(100, 160, 255, 0.06),
+    0 24px 64px rgba(0, 0, 0, 0.75),
+    0 0 80px rgba(60, 120, 220, 0.07);
 }
 
-.terminal-dock.collapsed {
+.terminal-dock.collapsed:not(.centered) {
   height: 36px;
   overflow: hidden;
 }
 
 body.has-dock {
-  padding-bottom: 296px;
+  padding-bottom: calc(var(--dock-height) + 16px);
 }
 body.has-dock.dock-collapsed {
   padding-bottom: 52px;
@@ -458,24 +484,12 @@ body.has-dock.dock-collapsed {
 @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 
 @media (max-width: 640px) {
-  .terminal-dock { height: 220px; }
-  .terminal-dock.collapsed { height: 32px; }
-  body.has-dock { padding-bottom: 236px; }
+  :root { --dock-height: 220px; }
+  .terminal-dock.collapsed:not(.centered) { height: 32px; }
   body.has-dock.dock-collapsed { padding-bottom: 48px; }
   .terminal-dock .dock-bar .dock-hint { display: none; }
   .terminal-dock .dock-body { padding: 10px 12px; font-size: 13px; }
   .terminal-dock .dock-input-row { padding: 8px 12px 12px; }
   .terminal-dock .proj-name { min-width: 80px; }
-}
-
-/* Landing-page fly-down: animate the centered terminal toward the bottom of
-   the viewport on first command submit, just before navigation. */
-body.flying-to-dock #scene .terminal {
-  transition:
-    transform 0.36s cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 0.36s ease;
-  transform: translateY(40vh) scale(0.42);
-  transform-origin: bottom center;
-  opacity: 0;
 }
 
