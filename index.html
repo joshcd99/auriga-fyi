@@ -7,6 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+CiAgPHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNiIgZmlsbD0iIzA1MDgwZiIvPgogIDxnIHN0cm9rZT0iIzZlYTVmZiIgc3Ryb2tlLXdpZHRoPSIxLjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgZmlsbD0ibm9uZSIgb3BhY2l0eT0iMC44Ij4KICAgIDxsaW5lIHgxPSIyMiIgeTE9IjUiIHgyPSI4IiB5Mj0iOCIvPgogICAgPGxpbmUgeDE9IjgiIHkxPSI4IiB4Mj0iNyIgeTI9IjE4Ii8+CiAgICA8bGluZSB4MT0iNyIgeTE9IjE4IiB4Mj0iMTYiIHkyPSIyNyIvPgogICAgPGxpbmUgeDE9IjE2IiB5MT0iMjciIHgyPSIyNSIgeTI9IjIxIi8+CiAgICA8bGluZSB4MT0iMjUiIHkxPSIyMSIgeDI9IjIyIiB5Mj0iNSIvPgogIDwvZz4KICA8Y2lyY2xlIGN4PSIyMiIgY3k9IjUiIHI9IjIuOCIgZmlsbD0id2hpdGUiLz4KICA8Y2lyY2xlIGN4PSI4IiBjeT0iOCIgcj0iMS42IiBmaWxsPSIjZGNlOGZmIi8+CiAgPGNpcmNsZSBjeD0iNyIgY3k9IjE4IiByPSIxLjYiIGZpbGw9IiNkY2U4ZmYiLz4KICA8Y2lyY2xlIGN4PSIxNiIgY3k9IjI3IiByPSIxLjYiIGZpbGw9IiNkY2U4ZmYiLz4KICA8Y2lyY2xlIGN4PSIyNSIgY3k9IjIxIiByPSIxLjYiIGZpbGw9IiNkY2U4ZmYiLz4KICA8Y2lyY2xlIGN4PSIxOSIgY3k9IjkiIHI9IjEuMiIgZmlsbD0iI2IwY2NmZiIgb3BhY2l0eT0iMC43Ii8+Cjwvc3ZnPg==" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Syne:wght@400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/assets/auriga.css" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -145,8 +146,39 @@
 <div id="auriga-label">Auriga · The Charioteer</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script src="/assets/terminal.js"></script>
 <script>
 window.addEventListener('load', function() {
+
+/* ── Returning-visitor mode: skip the centered intro, mount the dock ── */
+const SKIP_INTRO = !!(window.AurigaTerminal && window.AurigaTerminal.wasIntroDone());
+if (SKIP_INTRO) {
+  const scene = document.getElementById('scene');
+  if (scene) scene.style.display = 'none';
+  // Mount the dock + prefill a `help`-style listing so the page isn't blank.
+  window.AurigaTerminal.mountDock({ autoFocus: true });
+  setTimeout(() => {
+    const body = document.querySelector('.terminal-dock .dock-body');
+    if (!body) return;
+    const printListing = (title, table) => {
+      const t = document.createElement('span');
+      t.className = 'dock-line';
+      t.innerHTML = '<span class="dim">' + title + '</span>';
+      body.appendChild(t);
+      for (const [key, p] of Object.entries(table)) {
+        const isRedacted = key === 'redacted';
+        const row = document.createElement('span');
+        row.className = 'dock-line listing-row';
+        row.innerHTML = '<span class="proj-arrow">→ </span><span class="proj-name' + (isRedacted ? ' redacted' : '') + '">' + p.label + '</span><span class="proj-desc' + (isRedacted ? ' redacted' : '') + '">' + p.desc + '</span>';
+        body.appendChild(row);
+      }
+      body.appendChild(document.createElement('br'));
+    };
+    printListing('portfolio (CISC 480):', window.AurigaTerminal.PORTFOLIO);
+    printListing('live projects:', window.AurigaTerminal.PROJECTS);
+    body.scrollTop = body.scrollHeight;
+  }, 50);
+}
 /* ── STARFIELD ── */
 const canvas = document.getElementById('stars-canvas');
 const ctx = canvas.getContext('2d');
@@ -454,7 +486,11 @@ async function submitCommand() {
   if (route) {
     await sleep(120);
     appendLine(`<span class="dim">navigating to ${route.label}...</span>`);
-    await sleep(500);
+    // Mark intro as done so future visits skip the centered intro,
+    // then animate the centered terminal flying down toward the dock.
+    if (window.AurigaTerminal) window.AurigaTerminal.markIntroDone();
+    document.body.classList.add('flying-to-dock');
+    await sleep(360);
     window.location.href = route.href;
     return;
   }
@@ -527,9 +563,11 @@ async function runTerminal() {
   activateInput();
 }
 
-document.querySelector('.terminal').addEventListener('click', () => { if (inputActive) realInput.focus(); });
-window.addEventListener('pageshow', e => { if (e.persisted) window.location.reload(); });
-runTerminal();
+if (!SKIP_INTRO) {
+  document.querySelector('#scene .terminal').addEventListener('click', () => { if (inputActive) realInput.focus(); });
+  window.addEventListener('pageshow', e => { if (e.persisted) window.location.reload(); });
+  runTerminal();
+}
 }); // end window load
 </script>
 </body>
