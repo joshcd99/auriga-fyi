@@ -440,13 +440,56 @@
     return p === '/' || p === '/index.html' || p === '';
   }
 
+  // ─── Lazy script loading ─────────────────────────────────────────
+  // Used to pull in D3 + the constellation module on demand when the
+  // user navigates back to / from a content page.
+  const scriptPromises = {};
+  function loadScript(src) {
+    if (scriptPromises[src]) return scriptPromises[src];
+    scriptPromises[src] = new Promise((resolve, reject) => {
+      const existing = document.querySelector('script[src="' + src + '"]');
+      if (existing) { resolve(); return; }
+      const s = document.createElement('script');
+      s.src = src;
+      s.async = false;
+      s.onload = () => resolve();
+      s.onerror = (e) => reject(new Error('Failed to load ' + src));
+      document.head.appendChild(s);
+    });
+    return scriptPromises[src];
+  }
+
+  async function ensureConstellation() {
+    if (window.Constellation) return;
+    if (typeof window.d3 === 'undefined') {
+      await loadScript('https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js');
+    }
+    await loadScript('/assets/constellation.js');
+  }
+
   async function syncDockStateForPath(pathname) {
     if (!activeDock) return;
     const atRoot = isRootPath(pathname);
+
+    // Morph the dock between centered (at /) and docked (elsewhere).
     if (atRoot && !activeDock.isCentered()) {
       await activeDock.transitionToCentered();
     } else if (!atRoot && activeDock.isCentered()) {
       await activeDock.transitionToDocked();
+    }
+
+    // Manage the constellation in parallel — lazy-load it on the first
+    // visit back to /, hide it when leaving. Reveals without animation
+    // on SPA returns; the initial / load handles its own animated reveal.
+    if (atRoot) {
+      try {
+        await ensureConstellation();
+        if (window.Constellation) window.Constellation.render({ skipAnimation: true });
+      } catch (err) {
+        console.warn('Constellation lazy-load failed', err);
+      }
+    } else {
+      if (window.Constellation) window.Constellation.hide();
     }
   }
 
