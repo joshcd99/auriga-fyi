@@ -348,12 +348,25 @@ runConstellation();
 const body = document.getElementById('terminal-body');
 const realInput = document.getElementById('real-input');
 
+// Portfolio commands (CISC 480) — navigate within auriga.fyi.
+const PORTFOLIO = {
+  about:      { label: 'about',      desc: 'who I am',                       href: '/about/' },
+  skills:     { label: 'skills',     desc: 'what I work with',               href: '/skills/' },
+  projects:   { label: 'projects',   desc: 'what I\'ve built (5 entries)',   href: '/projects/' },
+  resume:     { label: 'resume',     desc: '1-page CV',                      href: '/resume/' },
+  reflection: { label: 'reflection', desc: 'signature work essay',           href: 'https://github.com/joshcd99/auriga-fyi#readme' },
+};
+
+// Live mini-products (sub-domains).
 const PROJECTS = {
   ember:     { label: 'Ember',      desc: 'personal finance tracker',  href: 'https://ember.auriga.fyi' },
   greenstep: { label: 'GreenStep',  desc: 'sustainability challenge',  href: 'https://greenstep.auriga.fyi' },
   plants:    { label: 'Plants',     desc: 'plant care tracker',        href: 'https://plants.auriga.fyi' },
   redacted:  { label: '[redacted]', desc: 'private',                   href: '/redacted' },
 };
+
+// Combined route map.
+const ROUTES = Object.assign({}, PORTFOLIO, PROJECTS);
 
 let inputDisplay = null, cursorEl = null, inputActive = false, typed = '';
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -396,50 +409,121 @@ function onKey(e) {
   if (e.key === 'Escape') { realInput.value = ''; typed = ''; inputDisplay.textContent = ''; }
 }
 
+function renderListing(title, table) {
+  appendLine(`<span class="dim">${title}</span>`);
+  for (const [key, p] of Object.entries(table)) {
+    const isRedacted = key === 'redacted';
+    const row = document.createElement('span');
+    row.className = 'project-row line visible';
+    row.innerHTML = `<span class="proj-arrow">→ </span><span class="proj-name${isRedacted ? ' redacted' : ''}">${p.label}</span><span class="proj-desc${isRedacted ? ' redacted' : ''}">${p.desc}</span>`;
+    body.appendChild(row);
+  }
+  appendLine();
+}
+
 async function submitCommand() {
   inputActive = false;
   realInput.removeEventListener('input', onInput);
   realInput.removeEventListener('keydown', onKey);
   if (cursorEl?.parentNode) cursorEl.remove();
   const val = typed.trim().toLowerCase();
-  const project = PROJECTS[val];
-  if (project) {
-    await sleep(120);
-    appendLine(`<span class="dim">navigating to ${project.label}...</span>`);
-    await sleep(700);
-    window.location.href = project.href;
-  } else if (val === '') {
-    appendLine(); activateInput();
-  } else {
+
+  // Built-in shell commands.
+  if (val === 'help' || val === '?' || val === 'ls') {
     await sleep(100);
-    appendLine(`<span class="err">zsh: command not found: ${typed.trim()}</span>`);
-    await sleep(300);
-    appendLine(); activateInput();
+    renderListing('portfolio (CISC 480):', PORTFOLIO);
+    renderListing('live projects:', PROJECTS);
+    appendLine('<span class="dim">type a command, or `clear`</span>');
+    appendLine();
+    activateInput();
+    return;
   }
+  if (val === 'clear') {
+    body.innerHTML = '';
+    activateInput();
+    return;
+  }
+  if (val === 'whoami') {
+    appendLine('<span class="accent">josh dunlap</span><span class="dim"> — cs \'26, university of st. thomas</span>');
+    appendLine();
+    activateInput();
+    return;
+  }
+
+  const route = ROUTES[val];
+  if (route) {
+    await sleep(120);
+    appendLine(`<span class="dim">navigating to ${route.label}...</span>`);
+    await sleep(500);
+    window.location.href = route.href;
+    return;
+  }
+  if (val === '') {
+    appendLine(); activateInput(); return;
+  }
+  await sleep(100);
+  appendLine(`<span class="err">zsh: command not found: ${typed.trim()}</span><span class="dim">  (try \`help\`)</span>`);
+  await sleep(200);
+  appendLine();
+  activateInput();
 }
 
-async function runTerminal() {
-  await sleep(1600);
-  {
-    const line = appendLine('<span class="prompt">$ </span>');
-    const cmd = document.createElement('span'); cmd.className = 'cmd';
-    const cur = document.createElement('span'); cur.className = 'cursor';
-    line.appendChild(cmd); line.appendChild(cur);
-    await typeText(cmd, 'cd ~/auriga.fyi', 55);
-    await sleep(260); cur.remove();
-  }
-  appendLine(); await sleep(180);
-  appendLine('<span class="oops">oops!</span><span class="dim"> were you looking for one of these?</span>');
-  appendLine(); await sleep(100);
-  for (const [key, p] of Object.entries(PROJECTS)) {
+async function animateListing(title, table) {
+  appendLine(`<span class="dim">${title}</span>`);
+  await sleep(120);
+  for (const [key, p] of Object.entries(table)) {
     const row = document.createElement('span');
     row.className = 'project-row line';
     const isRedacted = key === 'redacted';
     row.innerHTML = `<span class="proj-arrow">→ </span><span class="proj-name${isRedacted ? ' redacted' : ''}">${p.label}</span><span class="proj-desc${isRedacted ? ' redacted' : ''}">${p.desc}</span>`;
     body.appendChild(row);
-    await sleep(60); row.classList.add('visible'); await sleep(200);
+    await sleep(50); row.classList.add('visible'); await sleep(140);
   }
-  appendLine(); await sleep(200);
+  appendLine();
+}
+
+async function runTerminal() {
+  await sleep(1600);
+
+  // $ whoami
+  {
+    const line = appendLine('<span class="prompt">$ </span>');
+    const cmd = document.createElement('span'); cmd.className = 'cmd';
+    const cur = document.createElement('span'); cur.className = 'cursor';
+    line.appendChild(cmd); line.appendChild(cur);
+    await typeText(cmd, 'whoami', 55);
+    await sleep(200); cur.remove();
+  }
+  appendLine('<span class="accent">josh dunlap</span><span class="dim"> — cs \'26, university of st. thomas</span>');
+  appendLine();
+  await sleep(280);
+
+  // $ ls portfolio/
+  {
+    const line = appendLine('<span class="prompt">$ </span>');
+    const cmd = document.createElement('span'); cmd.className = 'cmd';
+    const cur = document.createElement('span'); cur.className = 'cursor';
+    line.appendChild(cmd); line.appendChild(cur);
+    await typeText(cmd, 'ls portfolio/', 50);
+    await sleep(180); cur.remove();
+  }
+  await animateListing('portfolio (CISC 480):', PORTFOLIO);
+  await sleep(180);
+
+  // $ ls projects/
+  {
+    const line = appendLine('<span class="prompt">$ </span>');
+    const cmd = document.createElement('span'); cmd.className = 'cmd';
+    const cur = document.createElement('span'); cur.className = 'cursor';
+    line.appendChild(cmd); line.appendChild(cur);
+    await typeText(cmd, 'ls projects/', 50);
+    await sleep(180); cur.remove();
+  }
+  await animateListing('live projects:', PROJECTS);
+
+  appendLine('<span class="dim">type a command, or `help`</span>');
+  appendLine();
+  await sleep(160);
   activateInput();
 }
 

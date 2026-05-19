@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>resume — auriga.fyi</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+CiAgPHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNiIgZmlsbD0iIzA1MDgwZiIvPgogIDxnIHN0cm9rZT0iIzZlYTVmZiIgc3Ryb2tlLXdpZHRoPSIxLjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgZmlsbD0ibm9uZSIgb3BhY2l0eT0iMC44Ij4KICAgIDxsaW5lIHgxPSIyMiIgeTE9IjUiIHgyPSI4IiB5Mj0iOCIvPgogICAgPGxpbmUgeDE9IjgiIHkxPSI4IiB4Mj0iNyIgeTI9IjE4Ii8+CiAgICA8bGluZSB4MT0iNyIgeTE9IjE4IiB4Mj0iMTYiIHkyPSIyNyIvPgogICAgPGxpbmUgeDE9IjE2IiB5MT0iMjciIHgyPSIyNSIgeTI9IjIxIi8+CiAgICA8bGluZSB4MT0iMjUiIHkxPSIyMSIgeDI9IjIyIiB5Mj0iNSIvPgogIDwvZz4KICA8Y2lyY2xlIGN4PSIyMiIgY3k9IjUiIHI9IjIuOCIgZmlsbD0id2hpdGUiLz4KICA8Y2lyY2xlIGN4PSI4IiBjeT0iOCIgcj0iMS42IiBmaWxsPSIjZGNlOGZmIi8+CiAgPGNpcmNsZSBjeD0iNyIgY3k9IjE4IiByPSIxLjYiIGZpbGw9IiNkY2U4ZmYiLz4KICA8Y2lyY2xlIGN4PSIxNiIgY3k9IjI3IiByPSIxLjYiIGZpbGw9IiNkY2U4ZmYiLz4KICA8Y2lyY2xlIGN4PSIyNSIgY3k9IjIxIiByPSIxLjYiIGZpbGw9IiNkY2U4ZmYiLz4KICA8Y2lyY2xlIGN4PSIxOSIgY3k9IjkiIHI9IjEuMiIgZmlsbD0iI2IwY2NmZiIgb3BhY2l0eT0iMC43Ii8+Cjwvc3ZnPg==" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Syne:wght@400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/assets/auriga.css" />
+  <style>
+    .resume-actions {
+      display: flex; flex-wrap: wrap; gap: 12px;
+      margin: 16px 0 20px;
+    }
+    .resume-actions a {
+      padding: 8px 14px;
+      border: 1px solid rgba(122,179,240,0.3);
+      border-radius: 4px;
+      font-size: 12px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--blue);
+    }
+    .resume-actions a:hover {
+      color: var(--blue-bright);
+      border-color: rgba(180,215,255,0.6);
+      background: rgba(122,179,240,0.05);
+    }
+    .resume-embed {
+      width: 100%;
+      min-height: 720px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: rgba(0,0,0,0.3);
+    }
+    .resume-body {
+      margin-top: 24px;
+      padding: 24px 28px;
+      background: rgba(122,179,240,0.03);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+    }
+    .resume-body h3 {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 12px;
+      color: var(--green);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin: 20px 0 8px;
+      padding-bottom: 4px;
+      border-bottom: 1px dashed rgba(80,140,220,0.2);
+    }
+    .resume-body h3:first-child { margin-top: 0; }
+    .resume-body .entry-head {
+      display: flex; justify-content: space-between; align-items: baseline;
+      flex-wrap: wrap; gap: 6px;
+      margin-top: 10px;
+    }
+    .resume-body .entry-head .role { color: var(--blue); font-weight: 700; }
+    .resume-body .entry-head .org { color: var(--text-dim); }
+    .resume-body .entry-head .when { color: var(--muted); font-size: 12px; }
+    .resume-body ul { margin: 6px 0 12px; padding-left: 18px; }
+    .resume-body li { font-size: 13.5px; line-height: 1.65; margin-bottom: 3px; }
+  </style>
+</head>
+<body class="scroll-page">
+
+<canvas id="stars-canvas"></canvas>
+
+<main class="page">
+  <div class="terminal">
+    <div class="terminal-bar">
+      <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+      <span class="bar-title">auriga.fyi/resume — zsh</span>
+    </div>
+    <div class="terminal-body">
+
+      <div class="section-cmd"><span class="prompt">$ </span>open resume.pdf</div>
+
+      <h1 class="title">Resume</h1>
+      <h2 class="subtitle">Josh Dunlap · B.S. CS, University of St. Thomas · Expected May 2026</h2>
+
+      <div class="resume-actions">
+        <a href="/resume/josh-dunlap-resume.pdf" target="_blank" rel="noopener">Download PDF ↓</a>
+        <a href="mailto:josh.dunlap@stthomas.edu">Email me</a>
+        <a href="https://linkedin.com/in/joshdunlap2" target="_blank" rel="noopener">LinkedIn</a>
+        <a href="https://github.com/joshcd99" target="_blank" rel="noopener">GitHub</a>
+      </div>
+
+      <object class="resume-embed" data="/resume/josh-dunlap-resume.pdf" type="application/pdf">
+        <p class="dim" style="padding: 20px;">PDF preview not available. <a href="/resume/josh-dunlap-resume.pdf">Download the PDF</a> instead.</p>
+      </object>
+
+      <div class="resume-body">
+        <p class="dim" style="margin-bottom: 16px;">Text version (mirrors the PDF — quick to scan):</p>
+
+        <h3>Skills</h3>
+        <ul>
+          <li><strong>Languages:</strong> TypeScript, JavaScript, Swift, Objective-C, Python, Java, SQL</li>
+          <li><strong>Frameworks &amp; Tools:</strong> React, Node.js, Cloudflare Workers, SwiftUI, CoreBluetooth, AppKit</li>
+          <li><strong>Platforms &amp; Services:</strong> NetSuite (SuiteScript), WooCommerce, Supabase, Git/GitHub, Xcode</li>
+          <li><strong>Other:</strong> Power BI, Tableau, Microsoft Office</li>
+        </ul>
+
+        <h3>Education</h3>
+        <div class="entry-head">
+          <span><span class="role">B.S. Computer Science</span> &middot; <span class="org">University of St. Thomas</span></span>
+          <span class="when">Expected May 2026 &middot; 3.51 GPA</span>
+        </div>
+        <ul>
+          <li><strong>Relevant Coursework:</strong> Data Structures, Algorithms, Computer Architecture, Information Security, HCI, Web Development, Database Design, Applied Regression Analysis, Business Intelligence</li>
+        </ul>
+
+        <h3>Work Experience</h3>
+
+        <div class="entry-head">
+          <span><span class="role">Operations &amp; Technology Lead</span> &middot; <span class="org">Great Lakes Radiant &amp; Industrials &mdash; Minneapolis, MN</span></span>
+          <span class="when">May 2025 – Present</span>
+        </div>
+        <ul>
+          <li>Architected and deployed a Cloudflare Workers middleware integration connecting NetSuite, WooCommerce, and ShipStation, automating order flow and reducing manual data entry across five office locations.</li>
+          <li>Built internal tooling in React/TypeScript including a web-based heating-system layout tool adopted by the sales team and praised by a partner manufacturer as a competitive differentiator.</li>
+          <li>Drove company-wide technology modernization across ERP scripting (SuiteScript), transactional email infrastructure, password management, and cloud productivity migration.</li>
+        </ul>
+
+        <div class="entry-head">
+          <span><span class="role">Mobile Software Engineer Intern</span> &middot; <span class="org">Punch Through &mdash; Minneapolis, MN</span></span>
+          <span class="when">February 2025 – August 2025</span>
+        </div>
+        <ul>
+          <li>Designed and implemented an OTA firmware-update workflow for client BLE devices using Swift, enabling reliable over-the-air distribution with robust error handling and recovery mechanisms.</li>
+          <li>Built and shipped user-facing features in LightBlue with SwiftUI and CoreBluetooth, including a favorites system for peripherals, tooltips, and log filtering &mdash; improving usability and device discoverability.</li>
+          <li>Resolved critical stability issues across CoreBluetooth scanning, notifications, and connection handling, significantly improving reliability for 120,000+ monthly active users.</li>
+        </ul>
+
+        <div class="entry-head">
+          <span><span class="role">IT Support Specialist (Work Study)</span> &middot; <span class="org">YWCA &mdash; Saint Paul, MN</span></span>
+          <span class="when">September 2024 – February 2025</span>
+        </div>
+        <ul>
+          <li>Delivered end-user support across hardware, software, and networking, resolving issues for 100+ staff and ensuring minimal downtime.</li>
+          <li>Led modernization of the case management system, managing data migration and improving reporting accuracy, accessibility, and security across housing programs.</li>
+        </ul>
+
+        <div class="entry-head">
+          <span><span class="role">Software Engineer Intern</span> &middot; <span class="org">TechSmith &mdash; East Lansing, MI</span></span>
+          <span class="when">May 2024 – August 2024</span>
+        </div>
+        <ul>
+          <li>Developed macOS features for Snagit in Swift and Objective-C, collaborating in Agile sprints to deliver intuitive SwiftUI/AppKit interfaces.</li>
+          <li>Led development of the background-noise-removal UI and analytics, delivered ahead of schedule; 95% of survey respondents expressed enthusiasm for the new feature.</li>
+          <li>Developed unit tests to ensure software stability; identified and resolved performance and reliability issues through pair programming and code review.</li>
+        </ul>
+
+        <div class="entry-head">
+          <span><span class="role">Software Testing Intern</span> &middot; <span class="org">TechSmith &mdash; East Lansing, MI</span></span>
+          <span class="when">May 2023 – August 2023</span>
+        </div>
+        <ul>
+          <li>Designed and executed QA test plans, managing defect tracking and verification across multiple product teams.</li>
+          <li>Evaluated IPv6 compatibility within TechSmith products, safeguarding $3M in annual federal sales.</li>
+        </ul>
+
+        <h3>Leadership &amp; Service</h3>
+
+        <div class="entry-head">
+          <span><span class="role">Volunteer Youth Mentor</span> &middot; <span class="org">Big Brothers Big Sisters</span></span>
+          <span class="when">April 2025 – Present</span>
+        </div>
+        <ul>
+          <li>Mentor an elementary-age child through regular one-on-one sessions, providing guidance, support, and role modeling.</li>
+        </ul>
+
+        <div class="entry-head">
+          <span><span class="role">Technical Mentor</span> &middot; <span class="org">FIRST Robotics</span></span>
+          <span class="when">September 2019 – Present</span>
+        </div>
+        <ul>
+          <li>Guide students on software-hardware integration, teaching Java programming and embedded-systems concepts.</li>
+          <li>Support and help organize robotics competitions, ensuring smooth operations and a positive experience for participants.</li>
+        </ul>
+      </div>
+
+      <nav class="page-footer">
+        <a href="/">← back to terminal</a>
+        <a href="/about/">about</a>
+        <a href="/skills/">skills</a>
+        <a href="/projects/">projects</a>
+      </nav>
+    </div>
+  </div>
+</main>
+
+<div id="auriga-label">Auriga · The Charioteer</div>
+<script src="/assets/auriga.js"></script>
+</body>
+</html>
