@@ -184,12 +184,30 @@
       });
     }
 
+    // Pin the dock body to its bottom across the entire morph. The dock's
+    // clientHeight changes throughout the transition, so a single scrollTop
+    // set at the start would be wrong by the next frame. Returns a stop
+    // function that cancels the rAF loop.
+    function pinToBottomDuring() {
+      const stick = () => { body.scrollTop = body.scrollHeight; };
+      stick();
+      let rafId = requestAnimationFrame(function tick() {
+        stick();
+        rafId = requestAnimationFrame(tick);
+      });
+      return () => {
+        cancelAnimationFrame(rafId);
+        stick();
+      };
+    }
+
     function transitionToDocked() {
       if (!dock.classList.contains('centered')) return Promise.resolve();
       // Reserve scroll space before the dock lands.
       document.body.classList.add('has-dock');
       dock.classList.remove('centered');
-      return awaitDockTransition();
+      const unpin = pinToBottomDuring();
+      return awaitDockTransition().then(unpin);
     }
 
     function transitionToCentered() {
@@ -197,7 +215,8 @@
       // Drop the scroll-reservation so content can use the whole viewport.
       document.body.classList.remove('has-dock');
       dock.classList.add('centered');
-      return awaitDockTransition();
+      const unpin = pinToBottomDuring();
+      return awaitDockTransition().then(unpin);
     }
 
     // ─── Intro typing animation ───
