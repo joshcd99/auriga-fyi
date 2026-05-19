@@ -161,16 +161,11 @@
       saveState({ dockHTML: body.innerHTML });
     }
 
-    // ─── Centered → docked morph ───
+    // ─── Morph between centered and docked states ───
     // The single dock element changes its CSS class, which triggers
-    // transitions on top/left/width/height/transform/border. Returns a
-    // promise that resolves when the morph finishes.
-    function transitionToDocked() {
-      if (!dock.classList.contains('centered')) return Promise.resolve();
-      // Add body.has-dock first so content reserves room for the docked
-      // terminal before it lands.
-      document.body.classList.add('has-dock');
-      dock.classList.remove('centered');
+    // transitions on top/left/width/height/transform/border. Both
+    // helpers return a promise that resolves when the morph finishes.
+    function awaitDockTransition() {
       return new Promise((resolve) => {
         let resolved = false;
         const finish = () => {
@@ -180,15 +175,29 @@
           resolve();
         };
         const onEnd = (e) => {
-          // Wait for the longest-running transition (transform) on the dock itself.
           if (e.target === dock && (e.propertyName === 'transform' || e.propertyName === 'top')) {
             finish();
           }
         };
         dock.addEventListener('transitionend', onEnd);
-        // Safety: max transition duration is 0.72s, give it some slack.
-        setTimeout(finish, 950);
+        setTimeout(finish, 950); // safety: max transition is 0.72s
       });
+    }
+
+    function transitionToDocked() {
+      if (!dock.classList.contains('centered')) return Promise.resolve();
+      // Reserve scroll space before the dock lands.
+      document.body.classList.add('has-dock');
+      dock.classList.remove('centered');
+      return awaitDockTransition();
+    }
+
+    function transitionToCentered() {
+      if (dock.classList.contains('centered')) return Promise.resolve();
+      // Drop the scroll-reservation so content can use the whole viewport.
+      document.body.classList.remove('has-dock');
+      dock.classList.add('centered');
+      return awaitDockTransition();
     }
 
     // ─── Intro typing animation ───
@@ -346,17 +355,27 @@
             persistDockHTML(); // save before swap so reloads still work
 
             const wasCentered = dock.classList.contains('centered');
-            // If this is the first command from the centered intro, mark
-            // intro as done and morph to docked while we fetch the page.
-            if (wasCentered) markIntroDone();
+            const goingHome = isRootPath(new URL(cmd.href, location.origin).pathname);
+            // If leaving the centered intro for the first time, lock the
+            // intro flag so future hard-reloads on / skip it.
+            if (wasCentered && !goingHome) markIntroDone();
+
             const navPromise = spaNavigate(cmd.href, cmd.label).catch(() => {
               location.href = cmd.href;
             });
-            if (wasCentered) {
-              await Promise.all([transitionToDocked(), navPromise]);
-            } else {
-              await navPromise;
+
+            // Match the dock's state to the destination:
+            //   centered → docked  (leaving home)
+            //   docked   → centered (returning home)
+            //   no-op otherwise
+            let morphPromise = Promise.resolve();
+            if (wasCentered && !goingHome) {
+              morphPromise = transitionToDocked();
+            } else if (!wasCentered && goingHome) {
+              morphPromise = transitionToCentered();
             }
+
+            await Promise.all([morphPromise, navPromise]);
           } else {
             appendLine(body, `<span class="dim">navigating to ${escapeHtml(cmd.label)}...</span>`);
             await sleep(220);
@@ -378,16 +397,19 @@
       runIntro().catch((err) => console.error('runIntro failed', err));
     }
 
-    return {
+    const instance = {
       dock,
       submit,
       focus: () => realInput.focus(),
       collapse: () => { dock.classList.add('collapsed'); saveState({ collapsed: true }); },
       expand: () => { dock.classList.remove('collapsed'); saveState({ collapsed: false }); },
       transitionToDocked,
+      transitionToCentered,
       runIntro,
       isCentered: () => dock.classList.contains('centered'),
     };
+    activeDock = instance;
+    return instance;
   }
 
   function isTypingInOtherInput(e) {
@@ -409,6 +431,24 @@
   function seedDockHTML(html) { saveState({ dockHTML: html }); }
   function clearDockHTML() { saveState({ dockHTML: null }); }
   function hasDockHistory() { return !!loadState().dockHTML; }
+
+  // Module-level reference to the most recently mounted dock instance.
+  // Used by spaReplaceContent + popstate to sync dock state with the URL.
+  let activeDock = null;
+
+  function isRootPath(p) {
+    return p === '/' || p === '/index.html' || p === '';
+  }
+
+  async function syncDockStateForPath(pathname) {
+    if (!activeDock) return;
+    const atRoot = isRootPath(pathname);
+    if (atRoot && !activeDock.isCentered()) {
+      await activeDock.transitionToCentered();
+    } else if (!atRoot && activeDock.isCentered()) {
+      await activeDock.transitionToDocked();
+    }
+  }
 
   // ─── SPA navigation ────────────────────────────────────────────────
   // Internal routes that SPA-navigate (fetch + swap <main>, no page reload).
@@ -486,15 +526,19 @@
     }
   }
 
-  // Back/forward — replay the URL without pushing new history.
+  // Back/forward — replay the URL without pushing new history, AND morph
+  // the dock between centered/docked to match the destination.
   let spaListenersBound = false;
   function bindSpaListeners() {
     if (spaListenersBound) return;
     spaListenersBound = true;
-    window.addEventListener('popstate', () => {
-      spaReplaceContent(location.pathname + location.search).catch(() => {
+    window.addEventListener('popstate', async () => {
+      try {
+        await spaReplaceContent(location.pathname + location.search);
+        await syncDockStateForPath(location.pathname);
+      } catch (_) {
         location.reload();
-      });
+      }
     });
     // Replace initial history state so popstate has something to anchor to.
     try { history.replaceState({ spa: true, href: location.pathname }, '', location.pathname + location.search); } catch (_) {}
