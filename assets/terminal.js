@@ -133,14 +133,21 @@
     const realInput = dock.querySelector('[data-role="real-input"]');
     const toggleEl = dock.querySelector('[data-role="toggle"]');
 
-    // ─── Replay history (compact form) ───
-    const history = state.history || [];
-    if (history.length > 0) {
-      const recent = history.slice(-6);
-      appendLine(body, `<span class="dim">// resumed — last commands: ${recent.map(h => '<span class="kw">' + escapeHtml(h) + '</span>').join(' · ')}</span>`);
+    // ─── Restore full history if we have it; else greet ───
+    if (state.dockHTML) {
+      body.innerHTML = state.dockHTML;
+      // Add a thin separator showing we landed somewhere new.
+      const path = location.pathname.replace(/\/$/, '') || '/';
+      appendLine(body, `<span class="dim">// → arrived at ${escapeHtml(path)}</span>`);
     } else {
       const path = location.pathname.replace(/\/$/, '') || '/';
       appendLine(body, `<span class="dim">${opts.greeting || `// ready at ${escapeHtml(path)} — type \`help\``}</span>`);
+    }
+    body.scrollTop = body.scrollHeight;
+
+    // Helper for saving the current dock body to sessionStorage.
+    function persistDockHTML() {
+      saveState({ dockHTML: body.innerHTML });
     }
 
     // ─── Input handling ───
@@ -194,6 +201,9 @@
 
     if (opts.autoFocus) realInput.focus();
 
+    // Bind back/forward handler once the dock is live.
+    bindSpaListeners();
+
     // ─── Submit ────
     async function submit() {
       const raw = typed;
@@ -228,15 +238,26 @@
           history.length > 0 ? window.history.back() : (location.href = '/');
           break;
         case 'nav':
-          appendLine(body, `<span class="dim">navigating to ${escapeHtml(cmd.label)}...</span>`);
-          await sleep(280);
-          location.href = cmd.href;
+          if (isInternalSpaRoute(cmd.href)) {
+            appendLine(body, `<span class="dim">→ ${escapeHtml(cmd.label)}</span>`);
+            persistDockHTML(); // save before swap so reloads still work
+            try {
+              await spaNavigate(cmd.href, cmd.label);
+            } catch (_) { location.href = cmd.href; }
+          } else {
+            appendLine(body, `<span class="dim">navigating to ${escapeHtml(cmd.label)}...</span>`);
+            await sleep(220);
+            location.href = cmd.href;
+          }
           break;
         case 'unknown':
         default:
           appendLine(body, `<span class="err">zsh: command not found: ${escapeHtml(cmd.raw)}</span><span class="dim">  (try \`help\`)</span>`);
           break;
       }
+
+      // Persist the dock's current body HTML so the next page restores it.
+      persistDockHTML();
     }
 
     return {
@@ -261,5 +282,105 @@
   function markIntroDone() { saveState({ introDone: true }); }
   function wasIntroDone() { return !!loadState().introDone; }
 
-  window.AurigaTerminal = { mountDock, markIntroDone, wasIntroDone, PORTFOLIO, PROJECTS, ROUTES };
+  // Seed the dock's persisted history — used by the landing page just before
+  // flying down, so the dock restores the centered intro + the command the
+  // user submitted.
+  function seedDockHTML(html) { saveState({ dockHTML: html }); }
+  function clearDockHTML() { saveState({ dockHTML: null }); }
+  function hasDockHistory() { return !!loadState().dockHTML; }
+
+  // ─── SPA navigation ────────────────────────────────────────────────
+  // Internal routes that SPA-navigate (fetch + swap <main>, no page reload).
+  // Anything else (external subdomains, GitHub README, /redacted) falls back
+  // to a real navigation.
+  function isInternalSpaRoute(href) {
+    if (!href || typeof href !== 'string') return false;
+    if (!href.startsWith('/')) return false;
+    if (href.startsWith('//')) return false; // protocol-relative external
+    if (href === '/redacted' || href === '/redacted.html') return false;
+    if (/\.[a-z0-9]+(\?|$|#)/i.test(href)) return false; // file extension (e.g. .pdf)
+    return true;
+  }
+
+  // Fetch destination URL, swap its <main> into the current document,
+  // update title + per-page <style> tags, fire resize for the starfield.
+  // Does NOT touch history (callers handle pushState / popstate).
+  async function spaReplaceContent(href) {
+    const res = await fetch(href, { headers: { 'Accept': 'text/html' } });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const html = await res.text();
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+
+    // Title
+    if (doc.title) document.title = doc.title;
+
+    // Swap <main>
+    const newMain = doc.querySelector('main');
+    const currentMain = document.querySelector('main');
+    if (currentMain && newMain) {
+      currentMain.replaceWith(newMain);
+    } else if (newMain && !currentMain) {
+      // Inject before the dock if present, else before #auriga-label, else at end.
+      const dock = document.querySelector('.terminal-dock');
+      const label = document.getElementById('auriga-label');
+      const anchor = dock || label;
+      if (anchor) document.body.insertBefore(newMain, anchor);
+      else document.body.appendChild(newMain);
+    } else if (currentMain && !newMain) {
+      currentMain.remove();
+    }
+
+    // Per-page <style> tags — swap any previously injected ones for the new set.
+    document.querySelectorAll('style[data-spa-page-style]').forEach(el => el.remove());
+    doc.querySelectorAll('head > style').forEach(style => {
+      const cloned = style.cloneNode(true);
+      cloned.setAttribute('data-spa-page-style', '');
+      document.head.appendChild(cloned);
+    });
+
+    // Body classes — preserve has-dock (we still have it), merge destination class.
+    const destClasses = (doc.body.className || '').split(/\s+/).filter(Boolean);
+    const hadDock = document.body.classList.contains('has-dock');
+    const collapsed = document.body.classList.contains('dock-collapsed');
+    document.body.className = destClasses.join(' ');
+    if (hadDock) document.body.classList.add('has-dock');
+    if (collapsed) document.body.classList.add('dock-collapsed');
+
+    // Re-fire resize so the starfield canvas re-extends to the new content height.
+    window.dispatchEvent(new Event('resize'));
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }
+
+  // Public navigate: replace content + push history.
+  async function spaNavigate(href, label) {
+    try {
+      await spaReplaceContent(href);
+      try { history.pushState({ spa: true, href }, '', href); } catch (_) {}
+    } catch (err) {
+      // Fall back to real navigation if SPA fetch fails.
+      console.warn('SPA navigation failed, falling back', err);
+      location.href = href;
+    }
+  }
+
+  // Back/forward — replay the URL without pushing new history.
+  let spaListenersBound = false;
+  function bindSpaListeners() {
+    if (spaListenersBound) return;
+    spaListenersBound = true;
+    window.addEventListener('popstate', () => {
+      spaReplaceContent(location.pathname + location.search).catch(() => {
+        location.reload();
+      });
+    });
+    // Replace initial history state so popstate has something to anchor to.
+    try { history.replaceState({ spa: true, href: location.pathname }, '', location.pathname + location.search); } catch (_) {}
+  }
+
+  window.AurigaTerminal = {
+    mountDock, markIntroDone, wasIntroDone,
+    seedDockHTML, clearDockHTML, hasDockHistory,
+    spaNavigate, spaReplaceContent, isInternalSpaRoute, bindSpaListeners,
+    PORTFOLIO, PROJECTS, ROUTES
+  };
 })();

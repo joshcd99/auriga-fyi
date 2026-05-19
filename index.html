@@ -155,29 +155,32 @@ const SKIP_INTRO = !!(window.AurigaTerminal && window.AurigaTerminal.wasIntroDon
 if (SKIP_INTRO) {
   const scene = document.getElementById('scene');
   if (scene) scene.style.display = 'none';
-  // Mount the dock + prefill a `help`-style listing so the page isn't blank.
   window.AurigaTerminal.mountDock({ autoFocus: true });
-  setTimeout(() => {
-    const body = document.querySelector('.terminal-dock .dock-body');
-    if (!body) return;
-    const printListing = (title, table) => {
-      const t = document.createElement('span');
-      t.className = 'dock-line';
-      t.innerHTML = '<span class="dim">' + title + '</span>';
-      body.appendChild(t);
-      for (const [key, p] of Object.entries(table)) {
-        const isRedacted = key === 'redacted';
-        const row = document.createElement('span');
-        row.className = 'dock-line listing-row';
-        row.innerHTML = '<span class="proj-arrow">→ </span><span class="proj-name' + (isRedacted ? ' redacted' : '') + '">' + p.label + '</span><span class="proj-desc' + (isRedacted ? ' redacted' : '') + '">' + p.desc + '</span>';
-        body.appendChild(row);
-      }
-      body.appendChild(document.createElement('br'));
-    };
-    printListing('portfolio (CISC 480):', window.AurigaTerminal.PORTFOLIO);
-    printListing('live projects:', window.AurigaTerminal.PROJECTS);
-    body.scrollTop = body.scrollHeight;
-  }, 50);
+
+  // Only seed a fresh listing if the dock has no prior history to restore.
+  if (!window.AurigaTerminal.hasDockHistory()) {
+    setTimeout(() => {
+      const body = document.querySelector('.terminal-dock .dock-body');
+      if (!body) return;
+      const printListing = (title, table) => {
+        const t = document.createElement('span');
+        t.className = 'dock-line';
+        t.innerHTML = '<span class="dim">' + title + '</span>';
+        body.appendChild(t);
+        for (const [key, p] of Object.entries(table)) {
+          const isRedacted = key === 'redacted';
+          const row = document.createElement('span');
+          row.className = 'dock-line listing-row';
+          row.innerHTML = '<span class="proj-arrow">→ </span><span class="proj-name' + (isRedacted ? ' redacted' : '') + '">' + p.label + '</span><span class="proj-desc' + (isRedacted ? ' redacted' : '') + '">' + p.desc + '</span>';
+          body.appendChild(row);
+        }
+        body.appendChild(document.createElement('br'));
+      };
+      printListing('portfolio (CISC 480):', window.AurigaTerminal.PORTFOLIO);
+      printListing('live projects:', window.AurigaTerminal.PROJECTS);
+      body.scrollTop = body.scrollHeight;
+    }, 50);
+  }
 }
 /* ── STARFIELD ── */
 const canvas = document.getElementById('stars-canvas');
@@ -485,12 +488,48 @@ async function submitCommand() {
   const route = ROUTES[val];
   if (route) {
     await sleep(120);
-    appendLine(`<span class="dim">navigating to ${route.label}...</span>`);
-    // Mark intro as done so future visits skip the centered intro,
-    // then animate the centered terminal flying down toward the dock.
-    if (window.AurigaTerminal) window.AurigaTerminal.markIntroDone();
+    appendLine(`<span class="dim">→ ${route.label}</span>`);
+
+    // SPA-navigate for internal portfolio routes — terminal stays mounted,
+    // only the content area swaps. Real navigation for external links.
+    const useSpa = window.AurigaTerminal && window.AurigaTerminal.isInternalSpaRoute(route.href);
+
+    if (useSpa) {
+      window.AurigaTerminal.markIntroDone();
+      // Seed the dock body with the centered intro's content so the dock,
+      // when it mounts, comes up already showing the full history.
+      try {
+        const centeredHTML = document.getElementById('terminal-body').innerHTML;
+        const dockHTML = centeredHTML
+          .replace(/class="line"/g, 'class="dock-line"')
+          .replace(/class="line input-row"/g, 'class="dock-line input-row hidden-input"')
+          .replace(/class="project-row line/g, 'class="dock-line listing-row');
+        window.AurigaTerminal.seedDockHTML(dockHTML);
+      } catch (_) {}
+
+      // Animate the centered terminal down + fade.
+      document.body.classList.add('flying-to-dock');
+
+      // Kick off fetch + swap in parallel with the animation.
+      const navPromise = window.AurigaTerminal.spaNavigate(route.href, route.label);
+
+      // Wait for the animation to finish, then mount the dock with the seeded
+      // history. (Awaiting the fetch too ensures content is in place before
+      // we hide the scene.)
+      await Promise.all([sleep(380), navPromise]);
+
+      window.AurigaTerminal.mountDock({ autoFocus: true });
+
+      // Now that the dock is up and the new <main> is in place, hide the scene.
+      const scene = document.getElementById('scene');
+      if (scene) scene.style.display = 'none';
+      document.body.classList.remove('flying-to-dock');
+      return;
+    }
+
+    // External / non-SPA: fade the centered terminal and do a real navigation.
     document.body.classList.add('flying-to-dock');
-    await sleep(360);
+    await sleep(320);
     window.location.href = route.href;
     return;
   }
