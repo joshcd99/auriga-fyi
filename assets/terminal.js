@@ -30,6 +30,7 @@
   const ALIASES = {
     home: './', '~': './', cv: 'resume/', work: 'projects/',
     me: 'about/', who: 'about/', stack: 'skills/',
+    capstone: 'projects/greenstep/', // capstone IS GreenStep
   };
 
   // Resolve a base-relative or absolute href against document.baseURI →
