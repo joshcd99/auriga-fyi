@@ -416,6 +416,11 @@
       runIntro().catch((err) => console.error('runIntro failed', err));
     }
 
+    // Reveal page content with a top-to-bottom staggered fade-in.
+    // Skipped on the landing page (no <main>) and when the dock was
+    // mounted in centered+intro mode.
+    if (!isIntroRun) triggerPageReveal();
+
     const instance = {
       dock,
       submit,
@@ -454,6 +459,54 @@
   // Module-level reference to the most recently mounted dock instance.
   // Used by spaReplaceContent + popstate to sync dock state with the URL.
   let activeDock = null;
+
+  // ─── Page content reveal ─────────────────────────────────────────
+  // Top-to-bottom staggered fade-in on the direct children of <main>.
+  // Used both on initial page load (when content arrives via the static
+  // HTML) and after every SPA navigation (after the new <main> is
+  // swapped in).
+  function triggerPageReveal(opts) {
+    opts = opts || {};
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return; // respect the user's preference
+    }
+    const main = (opts.scope && opts.scope.tagName === 'MAIN')
+      ? opts.scope
+      : document.querySelector('main');
+    if (!main) return;
+
+    const children = Array.from(main.children);
+    if (children.length === 0) return;
+
+    const STAGGER = 55;     // ms between siblings
+    const MAX_INDEX = 11;   // cap so very long pages don't drag on forever
+    const DURATION = 380;
+
+    children.forEach((child, i) => {
+      const delay = Math.min(i, MAX_INDEX) * STAGGER;
+      // Start hidden so the very first paint shows nothing in this slot.
+      child.style.opacity = '0';
+      // Defer the animate() call by one frame so the opacity:0 actually
+      // takes effect before the keyframes resolve their `from` snapshot.
+      requestAnimationFrame(() => {
+        const anim = child.animate(
+          [
+            { opacity: 0, transform: 'translateY(8px)' },
+            { opacity: 1, transform: 'translateY(0)' },
+          ],
+          {
+            duration: DURATION,
+            delay,
+            fill: 'forwards',
+            easing: 'cubic-bezier(0.2, 0.8, 0.3, 1)',
+          }
+        );
+        // Clean up the inline opacity once the anim finishes so other
+        // logic (theme changes, etc.) can still mutate the element.
+        anim.onfinish = () => { child.style.opacity = ''; };
+      });
+    });
+  }
 
   function isRootPath(p) {
     return p === '/' || p === '/index.html' || p === '';
@@ -552,6 +605,9 @@
     } else if (currentMain && !newMain) {
       currentMain.remove();
     }
+
+    // Stagger-fade in the new content if we have one.
+    if (newMain) triggerPageReveal({ scope: newMain });
 
     // Per-page <style> tags — swap any previously injected ones for the new set.
     document.querySelectorAll('style[data-spa-page-style]').forEach(el => el.remove());
