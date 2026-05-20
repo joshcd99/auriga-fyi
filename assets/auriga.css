@@ -32,12 +32,17 @@ body.fixed-page  { overflow: hidden; }
 #stars-canvas { position: fixed; inset: 0; z-index: 0; }
 
 /* ── Page scaffolding for content pages ── */
+/* Content sits directly inside <main class="page"> with no faux-terminal
+   wrapper. The dock at the bottom is the only terminal on screen. */
 .page {
   position: relative;
   z-index: 2;
-  max-width: 820px;
+  max-width: 760px;
   margin: 0 auto;
-  padding: 64px 24px 96px;
+  padding: 88px 28px 64px;
+  font-size: 14.5px;
+  line-height: 1.7;
+  letter-spacing: 0.01em;
 }
 
 .terminal {
