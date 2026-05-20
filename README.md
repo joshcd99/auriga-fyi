@@ -20,7 +20,7 @@ I, Josh Dunlap, affirm that the work submitted here is my own. All sources, coll
 
 **Name:** Josh Dunlap  
 **Class:** CISC 480 — Senior Capstone  
-**Section:** *{TODO — fill in your section number}*  
+**Section:** 02  
 **Term:** Spring 2026
 
 ---
@@ -45,6 +45,3 @@ The interpersonal half of my growth happened, in large part, on a **[FIRST Robot
 
 I do not think these questions are getting easier. Generative AI is colonizing the same unsexy operational software I work on — quote generation, inventory forecasting, sales scripts, picker routing — and the pressure to ship without thinking is enormous. St. Thomas has prepared me to keep asking the questions anyway: who benefits, who pays, who is in the room when the decision gets made, and whether the people downstream of the model would call this "good" if you handed them a microphone. After graduation I plan to keep building unsexy operational software, because that is where the leverage is — and to keep pulling philosophy books off the shelf, because that is where I learned to recognize when the easy answer is the wrong one. The combination is the work.
 
----
-
-> **Note for the grader:** the portfolio's project pages contain a small number of `{ TODO }` placeholders where personal details (graduation date, specific team numbers, exact metrics) are being verified before final submission. The structure, narrative arc, SOAR / failure-story patterns, and required entry counts are complete.
