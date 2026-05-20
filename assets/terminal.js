@@ -8,26 +8,42 @@
   'use strict';
 
   // ─── Routing tables ───────────────────────────────────────────────
+  // Internal hrefs are base-relative (no leading slash) so they resolve
+  // correctly against the runtime <base href> tag — works on both
+  // auriga.fyi (base "/") and joshcd99.github.io/auriga-fyi/ (sub-path).
   const PORTFOLIO = {
-    about:      { label: 'about',      desc: 'who I am',                       href: '/about/' },
-    skills:     { label: 'skills',     desc: 'what I work with',               href: '/skills/' },
-    projects:   { label: 'projects',   desc: "what I've built (5 entries)",    href: '/projects/' },
-    resume:     { label: 'resume',     desc: '1-page CV',                      href: '/resume/' },
+    about:      { label: 'about',      desc: 'who I am',                       href: 'about/' },
+    skills:     { label: 'skills',     desc: 'what I work with',               href: 'skills/' },
+    projects:   { label: 'projects',   desc: "what I've built (5 entries)",    href: 'projects/' },
+    resume:     { label: 'resume',     desc: '1-page CV',                      href: 'resume/' },
     reflection: { label: 'reflection', desc: 'signature work essay',           href: 'https://github.com/joshcd99/auriga-fyi#readme' },
   };
   const PROJECTS = {
     ember:     { label: 'Ember',      desc: 'personal finance tracker', href: 'https://ember.auriga.fyi' },
     greenstep: { label: 'GreenStep',  desc: 'sustainability challenge', href: 'https://greenstep.auriga.fyi' },
     plants:    { label: 'Plants',     desc: 'plant care tracker',       href: 'https://plants.auriga.fyi' },
-    redacted:  { label: '[redacted]', desc: 'private',                  href: '/redacted' },
+    redacted:  { label: '[redacted]', desc: 'private',                  href: 'redacted.html' },
   };
   const ROUTES = Object.assign({}, PORTFOLIO, PROJECTS);
 
-  // Aliases — short navigational commands.
+  // Aliases — short navigational commands. Same base-relative convention.
   const ALIASES = {
-    home: '/', '~': '/', cv: '/resume/', work: '/projects/',
-    me: '/about/', who: '/about/', stack: '/skills/',
+    home: './', '~': './', cv: 'resume/', work: 'projects/',
+    me: 'about/', who: 'about/', stack: 'skills/',
   };
+
+  // Resolve a base-relative or absolute href against document.baseURI →
+  // a fully-resolved same-origin pathname suitable for fetch / pushState /
+  // location.href. The <base href> tag set in each HTML head ensures the
+  // base URL points at the deploy root (Vercel "/" or GH Pages "/auriga-fyi/").
+  function resolveInternal(href) {
+    try {
+      const u = new URL(href, document.baseURI);
+      return u.pathname + u.search + u.hash;
+    } catch (_) {
+      return href;
+    }
+  }
 
   // ─── Session state ────────────────────────────────────────────────
   const STORAGE_KEY = 'auriga.terminal.v1';
@@ -392,9 +408,15 @@
 
             await Promise.all([morphPromise, navPromise]);
           } else {
+            // External URL or non-SPA-able file/page (PDF, redacted, subdomain) —
+            // do a real navigation. Resolve through document.baseURI for the
+            // internal cases (e.g. redacted.html) so we don't accidentally
+            // navigate to a relative path under the current page.
             appendLine(body, `<span class="dim">navigating to ${escapeHtml(cmd.label)}...</span>`);
             await sleep(220);
-            location.href = cmd.href;
+            // External (with protocol) → use as-is; internal → resolve.
+            const target = /^[a-z]+:\/\//i.test(cmd.href) ? cmd.href : resolveInternal(cmd.href);
+            location.href = target;
           }
           break;
         case 'unknown':
@@ -504,8 +526,15 @@
     });
   }
 
+  // The deploy "base path" — empty on Vercel root, "/auriga-fyi" on GH Pages.
+  function getBasePath() {
+    return location.pathname.indexOf('/auriga-fyi/') === 0 ? '/auriga-fyi' : '';
+  }
+
   function isRootPath(p) {
-    return p === '/' || p === '/index.html' || p === '';
+    if (!p) return true;
+    const base = getBasePath();
+    return p === base + '/' || p === base + '/index.html' || p === base || p === '';
   }
 
   // ─── Lazy script loading ─────────────────────────────────────────
@@ -563,14 +592,20 @@
 
   // ─── SPA navigation ────────────────────────────────────────────────
   // Internal routes that SPA-navigate (fetch + swap <main>, no page reload).
-  // Anything else (external subdomains, GitHub README, /redacted) falls back
-  // to a real navigation.
+  // Anything else (external subdomains, GitHub README, /redacted, file
+  // downloads) falls back to a real navigation.
   function isInternalSpaRoute(href) {
     if (!href || typeof href !== 'string') return false;
-    if (!href.startsWith('/')) return false;
-    if (href.startsWith('//')) return false; // protocol-relative external
-    if (href === '/redacted' || href === '/redacted.html') return false;
-    if (/\.[a-z0-9]+(\?|$|#)/i.test(href)) return false; // file extension (e.g. .pdf)
+    if (href.startsWith('mailto:') || href.startsWith('tel:')) return false;
+    try {
+      const u = new URL(href, document.baseURI);
+      if (u.origin !== location.origin) return false; // external
+      if (/redacted/i.test(u.pathname)) return false; // standalone page
+      // File downloads (PDF, images, etc.) — never SPA-navigate.
+      if (/\.(pdf|png|jpe?g|gif|svg|webp|zip|css|js|json|xml|ico)$/i.test(u.pathname)) return false;
+    } catch (_) {
+      return false;
+    }
     return true;
   }
 
@@ -628,15 +663,17 @@
     window.scrollTo({ top: 0, behavior: 'instant' });
   }
 
-  // Public navigate: replace content + push history.
+  // Public navigate: replace content + push history. Resolves the input
+  // href through document.baseURI so it works on both root and sub-path
+  // deploys without callers having to know which one they're on.
   async function spaNavigate(href, label) {
+    const resolved = resolveInternal(href);
     try {
-      await spaReplaceContent(href);
-      try { history.pushState({ spa: true, href }, '', href); } catch (_) {}
+      await spaReplaceContent(resolved);
+      try { history.pushState({ spa: true, href: resolved }, '', resolved); } catch (_) {}
     } catch (err) {
-      // Fall back to real navigation if SPA fetch fails.
       console.warn('SPA navigation failed, falling back', err);
-      location.href = href;
+      location.href = resolved;
     }
   }
 
