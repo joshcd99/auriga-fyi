@@ -269,10 +269,6 @@
 
       await typeAndRun('ls portfolio/');
       renderListing('portfolio (CISC 480):', PORTFOLIO);
-      await sleep(180);
-
-      await typeAndRun('ls projects/');
-      renderListing('live projects:', PROJECTS);
 
       appendLine(body, '<span class="dim">type a command, or `help`</span>');
       appendLine(body, '');
