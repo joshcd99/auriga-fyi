@@ -52,14 +52,14 @@ window.addEventListener('load', function () {
   if (window.Constellation) window.Constellation.render();
 
   /* ── TERMINAL ──
-     One DOM element across the entire visit. On first visit, mount it in
-     centered mode and run the intro animation inside it; on first command,
-     it morphs to the bottom-docked state via CSS transitions (handled by
-     terminal.js). On subsequent visits (intro already shown), mount it
-     directly in docked mode. */
+     One DOM element across the entire visit. Always mounts centered on
+     this page — centered is the visual state of /, not a one-time
+     animation. The intro typing only fires on the first visit; on hard
+     refreshes / returns, the dock comes up centered with whatever
+     restored history sessionStorage has. */
   const introDone = window.AurigaTerminal && window.AurigaTerminal.wasIntroDone();
   window.AurigaTerminal.mountDock({
-    centered: !introDone,
+    centered: true,
     intro:    !introDone,
     autoFocus: true,
   });
