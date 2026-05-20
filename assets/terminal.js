@@ -1,15 +1,15 @@
-// Shared docked terminal — mounted on every page.
+// Shared docked terminal: mounted on every page.
 // Exposes: window.AurigaTerminal.mountDock(opts)
 // opts:
-//   greeting: string  — first line printed on cold mount (default: "// resumed at <pathname>")
-//   collapsed: bool   — start collapsed (default: from session state)
-//   autoFocus: bool   — focus input after mount (default: false)
+//   greeting: string : first line printed on cold mount (default: "// resumed at <pathname>")
+//   collapsed: bool  : start collapsed (default: from session state)
+//   autoFocus: bool  : focus input after mount (default: false)
 (function () {
   'use strict';
 
   // ─── Routing tables ───────────────────────────────────────────────
   // Internal hrefs are base-relative (no leading slash) so they resolve
-  // correctly against the runtime <base href> tag — works on both
+  // correctly against the runtime <base href> tag: works on both
   // auriga.fyi (base "/") and joshcd99.github.io/auriga-fyi/ (sub-path).
   const PORTFOLIO = {
     about:      { label: 'about',      desc: 'who I am',                       href: 'about/' },
@@ -26,7 +26,7 @@
   };
   const ROUTES = Object.assign({}, PORTFOLIO, PROJECTS);
 
-  // Aliases — short navigational commands. Same base-relative convention.
+  // Aliases: short navigational commands. Same base-relative convention.
   const ALIASES = {
     home: './', '~': './', cv: 'resume/', work: 'projects/',
     me: 'about/', who: 'about/', stack: 'skills/',
@@ -75,7 +75,7 @@
     root.innerHTML = `
       <div class="dock-bar" data-role="toggle" title="Click to collapse/expand">
         <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
-        <span class="bar-title">auriga.fyi — zsh</span>
+        <span class="bar-title">auriga.fyi · zsh</span>
         <span class="dock-hint dim">\` to focus · click to collapse</span>
       </div>
       <div class="dock-body" data-role="body"></div>
@@ -162,14 +162,14 @@
     //   restored history: replay the saved HTML.
     //   else: short greeting.
     if (isIntroRun) {
-      // leave body empty — runIntro will fill it
+      // leave body empty: runIntro will fill it
     } else if (state.dockHTML) {
       body.innerHTML = state.dockHTML;
       const path = location.pathname.replace(/\/$/, '') || '/';
       appendLine(body, `<span class="dim">// → arrived at ${escapeHtml(path)}</span>`);
     } else {
       const path = location.pathname.replace(/\/$/, '') || '/';
-      appendLine(body, `<span class="dim">${opts.greeting || `// ready at ${escapeHtml(path)} — type \`help\``}</span>`);
+      appendLine(body, `<span class="dim">${opts.greeting || `// ready at ${escapeHtml(path)}. type \`help\``}</span>`);
     }
     body.scrollTop = body.scrollHeight;
 
@@ -280,7 +280,7 @@
       await sleep(800);
 
       await typeAndRun('whoami');
-      appendLine(body, '<span class="accent">josh dunlap</span><span class="dim"> — cs \'26, university of st. thomas</span>');
+      appendLine(body, '<span class="accent">josh dunlap</span><span class="dim">, cs \'26, university of st. thomas</span>');
       appendLine(body, '');
       await sleep(260);
 
@@ -368,7 +368,7 @@
           body.innerHTML = '';
           break;
         case 'whoami':
-          appendLine(body, '<span class="accent">josh dunlap</span><span class="dim"> — cs \'26, university of st. thomas</span>');
+          appendLine(body, '<span class="accent">josh dunlap</span><span class="dim">, cs \'26, university of st. thomas</span>');
           break;
         case 'pwd':
           appendLine(body, `<span class="kw">${escapeHtml(location.pathname)}</span>`);
@@ -409,7 +409,7 @@
 
             await Promise.all([morphPromise, navPromise]);
           } else {
-            // External URL or non-SPA-able file/page (PDF, redacted, subdomain) —
+            // External URL or non-SPA-able file/page (PDF, redacted, subdomain):
             // do a real navigation. Resolve through document.baseURI for the
             // internal cases (e.g. redacted.html) so we don't accidentally
             // navigate to a relative path under the current page.
@@ -468,7 +468,7 @@
   function markIntroDone() { saveState({ introDone: true }); }
   function wasIntroDone() { return !!loadState().introDone; }
 
-  // Seed the dock's persisted history — used by the landing page just before
+  // Seed the dock's persisted history: used by the landing page just before
   // flying down, so the dock restores the centered intro + the command the
   // user submitted.
   function seedDockHTML(html) { saveState({ dockHTML: html }); }
@@ -527,7 +527,7 @@
     });
   }
 
-  // The deploy "base path" — empty on Vercel root, "/auriga-fyi" on GH Pages.
+  // The deploy "base path": empty on Vercel root, "/auriga-fyi" on GH Pages.
   function getBasePath() {
     return location.pathname.indexOf('/auriga-fyi/') === 0 ? '/auriga-fyi' : '';
   }
@@ -576,7 +576,7 @@
       await activeDock.transitionToDocked();
     }
 
-    // Manage the constellation in parallel — lazy-load it on the first
+    // Manage the constellation in parallel: lazy-load it on the first
     // visit back to /, hide it when leaving. Reveals without animation
     // on SPA returns; the initial / load handles its own animated reveal.
     if (atRoot) {
@@ -602,7 +602,7 @@
       const u = new URL(href, document.baseURI);
       if (u.origin !== location.origin) return false; // external
       if (/redacted/i.test(u.pathname)) return false; // standalone page
-      // File downloads (PDF, images, etc.) — never SPA-navigate.
+      // File downloads (PDF, images, etc.): never SPA-navigate.
       if (/\.(pdf|png|jpe?g|gif|svg|webp|zip|css|js|json|xml|ico)$/i.test(u.pathname)) return false;
     } catch (_) {
       return false;
@@ -641,7 +641,7 @@
     // Stagger-fade in the new content if we have one.
     if (newMain) triggerPageReveal({ scope: newMain });
 
-    // Per-page <style> tags — swap any previously injected ones for the new set.
+    // Per-page <style> tags: swap any previously injected ones for the new set.
     document.querySelectorAll('style[data-spa-page-style]').forEach(el => el.remove());
     doc.querySelectorAll('head > style').forEach(style => {
       const cloned = style.cloneNode(true);
@@ -649,7 +649,7 @@
       document.head.appendChild(cloned);
     });
 
-    // Body classes — add destination's classes, preserve runtime classes
+    // Body classes: add destination's classes, preserve runtime classes
     // (animation states, dock state). Never clobber the whole className,
     // since mid-animation that would yank flying-to-dock and snap the
     // transition back to its starting state.
@@ -678,7 +678,7 @@
     }
   }
 
-  // Back/forward — replay the URL without pushing new history, AND morph
+  // Back/forward: replay the URL without pushing new history, AND morph
   // the dock between centered/docked to match the destination.
   let spaListenersBound = false;
   function bindSpaListeners() {

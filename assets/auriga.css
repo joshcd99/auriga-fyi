@@ -1,4 +1,4 @@
-/* Auriga shared styles — used by all portfolio pages. */
+/* Auriga shared styles: used by all portfolio pages. */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
@@ -373,7 +373,7 @@ code, .mono {
     border-width 0.4s ease;
 }
 
-/* Centered state — used during the landing-page intro. The single element
+/* Centered state: used during the landing-page intro. The single element
    morphs from this to the default (docked) state when the user submits
    their first command. */
 .terminal-dock.centered {

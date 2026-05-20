@@ -1,4 +1,4 @@
-// Shared starfield background — used by all pages.
+// Shared starfield background: used by all pages.
 (function () {
   const canvas = document.getElementById('stars-canvas');
   if (!canvas) return;

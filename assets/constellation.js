@@ -1,4 +1,4 @@
-// Auriga constellation — D3 stereographic projection of the six brightest
+// Auriga constellation: D3 stereographic projection of the six brightest
 // stars, drawn in the top-left corner. Loaded on demand by terminal.js so
 // pages other than / don't pull in D3 unless the user navigates back home.
 //
@@ -201,7 +201,7 @@
   function hide() {
     if (!svgEl) return;
     svgEl.style.opacity = '0';
-    // Don't display:none — let the opacity transition finish naturally.
+    // Don't display:none: let the opacity transition finish naturally.
   }
 
   window.Constellation = { render, hide };

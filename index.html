@@ -48,13 +48,13 @@
 <script>
 window.addEventListener('load', function () {
 
-  // Auriga constellation — animated reveal on direct / loads.
+  // Auriga constellation: animated reveal on direct / loads.
   // (SPA navigations back to / use { skipAnimation: true } via terminal.js.)
   if (window.Constellation) window.Constellation.render();
 
   /* ── TERMINAL ──
      One DOM element across the entire visit. Always mounts centered on
-     this page — centered is the visual state of /, not a one-time
+     this page; centered is the visual state of /, not a one-time
      animation. The intro typing only fires on the first visit; on hard
      refreshes / returns, the dock comes up centered with whatever
      restored history sessionStorage has. */
@@ -65,7 +65,7 @@ window.addEventListener('load', function () {
     autoFocus: true,
   });
 
-  // Hard reloads on bf-cache restore — keep the current behaviour.
+  // Hard reloads on bf-cache restore: keep the current behaviour.
   window.addEventListener('pageshow', e => { if (e.persisted) window.location.reload(); });
 });
 </script>
